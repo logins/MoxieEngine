@@ -1,0 +1,6 @@
+[submodule "lib/ThirdParty/eigen"]
+	path = lib/ThirdParty/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "lib/ThirdParty/DirectXTex"]
+	path = lib/ThirdParty/DirectXTex
+	url = https://github.com/microsoft/DirectXTex.git

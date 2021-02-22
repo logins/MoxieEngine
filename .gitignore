@@ -6,6 +6,8 @@
 # Build and Install folders
 _build/
 _install/
+out/
+lib/ThirdParty/installed/
 
 # User-specific files
 *.suo

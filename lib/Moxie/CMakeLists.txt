@@ -8,23 +8,40 @@ file(GLOB_RECURSE moxie_SRC
     # TODO including platform specific code like D3D12 should be conditional when other Apis will be implemented 
 )
 
+# Getting all the header files... this is the best method I have found on the web, first taking all the files and then filter directories
+file(GLOB_RECURSE subdir_list LIST_DIRECTORIES true ${CMAKE_CURRENT_LIST_DIR}/*)
+
+SET(moxie_public_dirlist "")
+SET(moxie_private_dirlist "")
+
+FOREACH(child ${subdir_list})
+    IF(IS_DIRECTORY ${child})
+        IF(${child} MATCHES "Public$")
+        LIST(APPEND moxie_public_dirlist ${child})
+        ELSE()
+        LIST(APPEND moxie_private_dirlist ${child})
+        ENDIF()
+    ENDIF()
+ENDFOREACH()
+
+
+message( "---- CONTENT OF PUBLIC HEADERS -----\n" "${moxie_public_dirlist}" )
+message( "---- CONTENT OF PRIVATE HEADERS -----\n" "${moxie_private_dirlist}" ) 
+
 add_library(moxie ${moxie_SRC})
 
 # Getting include files from external libraries
 get_target_property(EIGEN_INTERFACE_INCLUDES eigen INTERFACE_INCLUDE_DIRECTORIES)
 
+message( "---- CONTENT OF EIGEN HEADERS ----\n" "${EIGEN_INTERFACE_INCLUDES}" )
+
 target_include_directories(moxie #Note: Only the Public folder will be seen by the targets that will use this library!!
     PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/Source/Graphics/Public
-        ${CMAKE_CURRENT_LIST_DIR}/Source/Math/Public
-        ${CMAKE_CURRENT_LIST_DIR}/Source/Public
-        EIGEN_INTERFACE_INCLUDES
+        ${moxie_public_dirlist}
+        ${EIGEN_INTERFACE_INCLUDES} 
     PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}/Source
-        ${CMAKE_CURRENT_LIST_DIR}/Source/Graphics
-        ${CMAKE_CURRENT_LIST_DIR}/Source/Math
-        # TODO including platform specific code like D3D12 should be conditional when other Apis will be implemented 
-        ${CMAKE_CURRENT_LIST_DIR}/Source/Graphics/D3D12
+        ${moxie_private_dirlist}
+        # TODO including platform specific code like D3D12 should be conditional when other Apis will be implemented
 )
 
 target_link_libraries(moxie

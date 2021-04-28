@@ -12,14 +12,14 @@
 #include "Application.h"
 #include "GraphicsTypes.h"
 
-namespace Mox { class PipelineState; }
+namespace Mox {	class PipelineState; }
 
 class TexturesExampleApplication : public Mox::Application
 {
 public:
 	TexturesExampleApplication() = default;
 
-	virtual void Initialize() override;
+	virtual void OnInitializeContent() override;
 private:
 
 	// Callbacks for main window mouse and keyboard events
@@ -51,6 +51,8 @@ private:
 	};
 
 	Mox::PipelineState* m_PipelineState;
+
+	Mox::Entity* m_CubeEntity;
 
 	Mox::Matrix4f m_MvpMatrix;
 
@@ -85,7 +87,7 @@ protected:
 
 	virtual void UpdateContent(float InDeltaTime) override;
 
-	virtual void RenderContent(Mox::CommandList& InCmdList) override;
+	virtual void RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView) override;
 
 
 

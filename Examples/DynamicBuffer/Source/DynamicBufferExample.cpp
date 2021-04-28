@@ -18,12 +18,15 @@
 #include "Device.h"
 #include "CommandList.h"
 #include "MoxMath.h"
+#include "Simulator.h"
+#include "Entity.h"
+
 
 #define PART3_SHADERS_PATH(NAME) LQUOTE(DYN_BUF_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
 
 int main()
 {
-	std::cout << "Hello from Part 3!" << std::endl;
+	std::cout << "Dynamic Buffer Example" << std::endl;
 
 	Mox::Application::Create<DynBufExampleApp>();
 
@@ -40,9 +43,9 @@ int main()
 
 DynBufExampleApp::DynBufExampleApp() = default;
 
-void DynBufExampleApp::Initialize()
+void DynBufExampleApp::OnInitializeContent()
 {
-	Mox::Application::Initialize();
+
 
 	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateEmptyResource();
 	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateEmptyResource();
@@ -53,7 +56,7 @@ void DynBufExampleApp::Initialize()
 	m_PipelineState = &Mox::AllocatePipelineState();
 
 	// Load Content
-	Mox::CommandList& loadContentCmdList = m_CmdQueue->GetAvailableCommandList();
+	Mox::CommandList& loadContentCmdList = m_Simulator->GetCmdQueue()->GetAvailableCommandList(); // TODO Cmd Queue will need to be part of the Renderer
 
 	// Upload vertex buffer data
 	Mox::Resource& intermediateVertexBuffer = Mox::GraphicsAllocator::Get()->AllocateEmptyResource(); // Note: we are allocating intermediate buffer that will not be used anymore later on but will stay in memory (leak)
@@ -128,21 +131,13 @@ void DynBufExampleApp::Initialize()
 	m_PipelineState->Init(pipelineStateDesc);
 
 	// Executing command list and waiting for full execution
-	m_CmdQueue->ExecuteCmdList(loadContentCmdList);
+	m_Simulator->GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
 
-	m_CmdQueue->Flush();
+	m_Simulator->GetCmdQueue()->Flush();
 
 	// Initialize the Model Matrix
-	m_ModelMatrix = Eigen::Matrix4f::Identity();
-
-	// Initialize the View Matrix
-	const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
-	const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
-	const Eigen::Vector3f upDirection = Eigen::Vector3f(0, 1, 0);
-	m_ViewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
-
-	// Initialize the Projection Matrix
-	m_ProjMatrix = Mox::Perspective(m_ZMin, m_ZMax, m_AspectRatio, m_Fov);
+	m_CubeEntity = &AddEntity();
+	m_CubeEntity->m_ModelMatrix = Eigen::Matrix4f::Identity();
 
 	// Window events delegates
 	m_MainWindow->OnMouseMoveDelegate.Add<DynBufExampleApp, &DynBufExampleApp::OnMouseMove>(this);
@@ -160,8 +155,8 @@ void DynBufExampleApp::OnQuitApplication()
 
 void DynBufExampleApp::OnMouseWheel(float InDeltaRot)
 {
-	m_Fov -= InDeltaRot / 1200.f;
-	SetFov(std::max(0.2094395102f, std::min(m_Fov, 1.570796327f))); // clamping
+	// TODO this needs to be passed by message to the renderer
+	//SetFov(std::max(0.2094395102f, std::min(m_MainWindowView.m_Fov -= InDeltaRot / 1200.f, 1.570796327f))); // clamping
 }
 
 void DynBufExampleApp::OnMouseMove(int32_t InX, int32_t InY)
@@ -182,7 +177,7 @@ void DynBufExampleApp::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 	tr.rotate(Mox::AngleAxisf(-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), Mox::Vector3f::UnitY()))
 		.rotate(Mox::AngleAxisf(-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), Mox::Vector3f::UnitX()));
 
-	m_ModelMatrix = tr.matrix() * m_ModelMatrix;
+	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
 }
 
 void DynBufExampleApp::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
@@ -191,7 +186,7 @@ void DynBufExampleApp::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 	tr.setIdentity();
 	tr.translate(Eigen::Vector3f(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0));
 
-	m_ModelMatrix = tr.matrix() * m_ModelMatrix;
+	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
 }
 
 void DynBufExampleApp::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)
@@ -208,8 +203,7 @@ void DynBufExampleApp::OnControlKeyPressed(Mox::KEYBOARD_KEY InPressedSysKey)
 
 void DynBufExampleApp::UpdateContent(float InDeltaTime)
 {
-	// Updating MVP matrix
-	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
+
 
 	// Updating color modifier
 	float counter = 1.f;
@@ -220,21 +214,23 @@ void DynBufExampleApp::UpdateContent(float InDeltaTime)
 	m_ColorModBuffer->SetData(&counter, sizeof(counter), sizeof(float));
 }
 
-void DynBufExampleApp::RenderContent(Mox::CommandList & InCmdList)
-{
+void DynBufExampleApp::RenderMainView(Mox::CommandList & InCmdList, const Mox::ContextView& InMainView)
+{	
+	// Updating cube MVP matrix
+	m_MvpMatrix = InMainView.m_ProjMatrix * InMainView.m_ViewMatrix * m_CubeEntity->m_ModelMatrix;
+
 	// Fill Command List Pipeline-related Data
 	{
+
 		InCmdList.SetPipelineStateAndResourceBinder(*m_PipelineState);
 
 		InCmdList.SetInputAssemblerData(Mox::PRIMITIVE_TOPOLOGY::PT_TRIANGLELIST, *m_VertexBufferView, *m_IndexBufferView);
 
-		InCmdList.SetViewportAndScissorRect(*m_Viewport, *m_ScissorRect);
-
-		InCmdList.SetRenderTargetFromWindow(*m_MainWindow);
 	}
 
 	// Fill Command List Buffer Data and Draw Command
 	{
+		// TODO move this computation inside the simulator by feching an array of entities and retrieve the model matrix and compute the MVP
 		InCmdList.SetGraphicsRootConstants(0, sizeof(Eigen::Matrix4f) / 4, m_MvpMatrix.data(), 0);
 
 		InCmdList.StoreAndReferenceDynamicBuffer(1, *m_ColorModBuffer, *m_ColorModBufferView);

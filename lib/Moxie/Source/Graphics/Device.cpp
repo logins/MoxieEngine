@@ -20,7 +20,7 @@ Mox::Device& GetDevice()
 	static std::unique_ptr<Mox::Device> graphicsDevice = nullptr;
 
 
-#ifdef GRAPHICS_SDK_D3D12
+#ifdef GRAPHICS_SDK_D3D12 // TODO move this IF statement at device initialization (that should be done at Application init)
 	if (!graphicsDevice) 
 	{
 		// Note: Debug Layer needs to be created before creating the Device

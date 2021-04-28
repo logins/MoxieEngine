@@ -17,7 +17,7 @@ namespace Mox
 	{
 		HINSTANCE InHInstance = ::GetModuleHandle(NULL); //Created windows will always refer to the current application instance
 		m_CurrentDevice = m_CmdQueue.GetD3D12Device();
-	
+
 		// RTV Descriptor Size is vendor-dependent.
 		// We need to retrieve it in order to know how much space to reserve per each descriptor in the Descriptor Heap
 		m_RTVDescIncrementSize = m_CurrentDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -58,6 +58,9 @@ namespace Mox
 	{
 		HINSTANCE InHInstance = ::GetModuleHandle(NULL); //Created windows will always refer to the current application instance
 		m_CurrentDevice = m_CmdQueue.GetD3D12Device();
+
+		m_FrameWidth = InWindowInitInput.WinWidth;
+		M_FrameHeight = InWindowInitInput.WinHeight;
 
 		// RTV Descriptor Size is vendor-dependent.
 		// We need to retrieve it in order to know how much space to reserve per each descriptor in the Descriptor Heap

@@ -217,8 +217,8 @@ namespace Mox {
 		// When a new frame starts, we are sure by the application that there are a total of Application::GetMaxConcurrentFramesNum() active,
 		// so we can use that number to divide the dynamic allocator circular memory pool in equal parts, and move the maximum allocation index each time we have a new frame.
 		// The rest of memory is considered off limits since their relative frames are still in flight.
-		auto currentFrameNum = Application::GetCurrentFrameNumber();
-		float currentFramePartition = (Application::GetCurrentFrameNumber() % Application::GetMaxConcurrentFramesNum() ) / static_cast<float>(Application::GetMaxConcurrentFramesNum());
+		auto currentFrameNum = Application::Get()->GetCurrentFrameNumber();
+		float currentFramePartition = (Application::Get()->GetCurrentFrameNumber() % Application::GetMaxConcurrentFramesNum() ) / static_cast<float>(Application::GetMaxConcurrentFramesNum());
 		static const float fractionSize = 1.0f / Application::GetMaxConcurrentFramesNum();
 
 		m_DynamicBufferAllocator->SetAdmittedAllocationRegion(currentFramePartition, currentFramePartition + fractionSize);

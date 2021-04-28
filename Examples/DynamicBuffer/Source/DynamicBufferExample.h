@@ -13,14 +13,14 @@
 #include "GraphicsTypes.h"
 #include "MoxMath.h"
 
-namespace Mox {  class PipelineState;  }
+namespace Mox { class PipelineState; class Entity; }
 
 class DynBufExampleApp : public Mox::Application
 {
 public:
 	DynBufExampleApp();
 
-	virtual void Initialize() override;
+	virtual void OnInitializeContent() override;
 
 	virtual void OnQuitApplication() override;
 
@@ -46,6 +46,8 @@ private:
 	Mox::ConstantBufferView* m_ColorModBufferView;
 
 	Mox::PipelineState* m_PipelineState;
+
+	Mox::Entity* m_CubeEntity;
 
 	Mox::Matrix4f m_MvpMatrix;
 
@@ -80,7 +82,7 @@ protected:
 
 	virtual void UpdateContent(float InDeltaTime) override;
 
-	virtual void RenderContent(Mox::CommandList& InCmdList) override;
+	virtual void RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView) override;
 
 
 

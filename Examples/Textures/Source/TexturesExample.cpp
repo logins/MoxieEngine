@@ -17,6 +17,8 @@
 #include "Window.h"
 #include "Device.h"
 #include "CommandList.h"
+#include "Entity.h"
+#include "Simulator.h"
 
 
 #define TEXTURES_EXAMPLE_SHADERS_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
@@ -40,12 +42,10 @@ int main()
 }
 
 
-void TexturesExampleApplication::Initialize()
+void TexturesExampleApplication::OnInitializeContent()
 {
-	Application::Initialize();
-
 	// Load Content
-	Mox::CommandList& loadContentCmdList = m_CmdQueue->GetAvailableCommandList();
+	Mox::CommandList& loadContentCmdList = m_Simulator->GetCmdQueue()->GetAvailableCommandList();
 
 	// --- Vertex Buffer ---
 	size_t vertexDataSize = sizeof(VertexPosColor) * _countof(m_VertexData);
@@ -223,23 +223,15 @@ void TexturesExampleApplication::Initialize()
 	loadContentCmdList.Dispatch(mip1SizeAligned / 8, mip1SizeAligned / 8, 6);
 
 	// Executing command list and waiting for full execution
-	m_CmdQueue->ExecuteCmdList(loadContentCmdList);
+	m_Simulator->GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
 
-	m_CmdQueue->Flush(); // Note: Flushing operations on the command queue here will ensure that all the operations made on resources by the loadContentCmdList finished executing!
+	m_Simulator->GetCmdQueue()->Flush(); // Note: Flushing operations on the command queue here will ensure that all the operations made on resources by the loadContentCmdList finished executing!
 
 	// --- MIPS GENERATION ENDS ---
 
 	// Initialize the Model Matrix
-	m_ModelMatrix = Eigen::Matrix4f::Identity();
-
-	// Initialize the View Matrix
-	const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
-	const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
-	const Eigen::Vector3f upDirection = Eigen::Vector3f(0, 1, 0);
-	m_ViewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
-
-	// Initialize the Projection Matrix
-	m_ProjMatrix = Mox::Perspective(m_ZMin, m_ZMax, m_AspectRatio, m_Fov);
+	m_CubeEntity = &AddEntity();
+	m_CubeEntity->m_ModelMatrix = Eigen::Matrix4f::Identity();
 
 	// Window events delegates
 	m_MainWindow->OnMouseMoveDelegate.Add<TexturesExampleApplication, &TexturesExampleApplication::OnMouseMove>(this);
@@ -250,8 +242,9 @@ void TexturesExampleApplication::Initialize()
 
 void TexturesExampleApplication::OnMouseWheel(float InDeltaRot)
 {
-	m_Fov -= InDeltaRot / 1200.f;
-	SetFov(std::max(0.2094395102f, std::min(m_Fov, 1.570796327f))); // clamping
+	// TODO this needs to be passed by message to the renderer
+	//m_Fov -= InDeltaRot / 1200.f;
+	//SetFov(std::max(0.2094395102f, std::min(m_Fov, 1.570796327f))); // clamping
 }
 
 void TexturesExampleApplication::OnMouseMove(int32_t InX, int32_t InY)
@@ -272,7 +265,7 @@ void TexturesExampleApplication::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDel
 	tr.rotate(Eigen::AngleAxisf(-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), Eigen::Vector3f::UnitY()))
 		.rotate(Eigen::AngleAxisf(-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), Eigen::Vector3f::UnitX()));
 
-	m_ModelMatrix = tr.matrix() * m_ModelMatrix;
+	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
 }
 
 void TexturesExampleApplication::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
@@ -281,7 +274,7 @@ void TexturesExampleApplication::OnRightMouseDrag(int32_t InDeltaX, int32_t InDe
 	tr.setIdentity();
 	tr.translate(Eigen::Vector3f(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0));
 
-	m_ModelMatrix = tr.matrix() * m_ModelMatrix;
+	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
 }
 
 void TexturesExampleApplication::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)
@@ -300,21 +293,20 @@ void TexturesExampleApplication::UpdateContent(float InDeltaTime)
 {
 
 	// Updating MVP matrix
-	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
+
 
 }
 
-void TexturesExampleApplication::RenderContent(Mox::CommandList& InCmdList)
+void TexturesExampleApplication::RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView)
 {
+	// Updating cube MVP matrix
+	m_MvpMatrix = InMainView.m_ProjMatrix * InMainView.m_ViewMatrix * m_CubeEntity->m_ModelMatrix;
+
 	// Fill Command List Pipeline-related Data
 	{
 		InCmdList.SetPipelineStateAndResourceBinder(*m_PipelineState);
 
 		InCmdList.SetInputAssemblerData(Mox::PRIMITIVE_TOPOLOGY::PT_TRIANGLELIST, *m_VertexBufferView, *m_IndexBufferView);
-
-		InCmdList.SetViewportAndScissorRect(*m_Viewport, *m_ScissorRect);
-
-		InCmdList.SetRenderTargetFromWindow(*m_MainWindow);
 	}
 
 	// Fill Command List Buffer Data and Draw Command

@@ -61,5 +61,5 @@ if(NOT EXISTS ${INSTALLED_LIBS_DIR}/DirectXTex)
     build_install_lib("DirectXTex" "")
 endif()
 
-
-
+# ----- MICROSOFT -----
+add_subdirectory(Microsoft)

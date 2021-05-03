@@ -7,6 +7,7 @@
 */
 #include "TaskSystem.h"
 #include "MoxUtils.h"
+#include "CpuProfiling.h"
 
 int main()
 {
@@ -15,11 +16,14 @@ int main()
 
 	// Adding tasks
 	const uint32_t numTasks = 1000;
-	static const uint32_t maxSingleTaskSeconds = 10;
+	static const uint32_t maxSingleTaskSeconds = 4;
 
 	for (size_t i = 1; i < numTasks; i++)
 	{
 		taskSystem.Enqueue([i] {
+
+			CPU_MARKER_SPAN("Task %d", i)
+
 			auto a = std::chrono::steady_clock::now();
 			auto timeToWait = std::chrono::seconds((std::rand() % maxSingleTaskSeconds) + 1);
 

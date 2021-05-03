@@ -75,12 +75,14 @@ target_include_directories(moxie #Note: Only the Public folder will be seen by t
 
 target_link_libraries(moxie
     PUBLIC
-        eigen entt
+        eigen entt $<${MSVC}:ConcVis>
     PRIVATE # TODO most of these should be conditional on the platform we are using
         DirectXTex d3d12.lib dxgi.lib d3dx12.h d3dcompiler.lib dxguid.lib
 )
 
-target_compile_definitions(moxie 
+target_compile_definitions(moxie
+    PUBLIC
+        COMPILER_MSVC=${MSVC}
 	PRIVATE
 		GRAPHICS_SDK_D3D12=1 # This define simulates a switch between possible graphics APIs. When defined, code will assume we chose D3D12
 )

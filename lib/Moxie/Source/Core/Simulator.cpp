@@ -13,8 +13,11 @@
 #include "Application.h"
 #include "CommandQueue.h"
 #include "GraphicsAllocator.h"
+#include "CpuProfiling.h"
 
 namespace Mox {
+
+	DEFINE_CPU_MARKER_SERIES(Simulate)
 
 	SimulatonThread::SimulatonThread()
 		: m_GraphicsDevice(Mox::GetDevice())
@@ -40,18 +43,19 @@ namespace Mox {
 	void SimulatonThread::Update()
 	{
 
-
 		static double elapsedSeconds = 0;
 		static uint64_t frameNumberPerSecond = 0;
 		static std::chrono::high_resolution_clock clock;
 		auto t0 = clock.now();
 
 		OnCpuFrameStarted();
+		{
+		CPU_MARKER_SPAN(Simulate, "Simulate %d", m_CpuFrameNumber);
 
-		Application::Get()->UpdateContent(m_DeltaTime);
+			Application::Get()->UpdateContent(m_DeltaTime);
 
-		RenderMainView();
-
+			RenderMainView();
+		}
 		// Frame on CPU side finished computing, send the notice
 		OnCpuFrameFinished();
 
@@ -128,6 +132,8 @@ namespace Mox {
 
 	void SimulatonThread::OnCpuFrameStarted()
 	{
+		Application::Get()->WaitForFrameStart_SimThread();
+
 		// Checking if we are too far in frame computation compared to the GPU work.
 		// If it is the case, wait for completion
 		const int64_t framesToWaitNum = m_CmdQueue->ComputeFramesInFlightNum() - Application::GetMaxConcurrentFramesNum() + 1; // +1 because we need space for the current frame
@@ -145,6 +151,8 @@ namespace Mox {
 	void SimulatonThread::OnCpuFrameFinished()
 	{
 		m_CmdQueue->OnCpuFrameFinished();
+
+		Application::Get()->NotifyFrameEnd_SimThread();
 	}
 
 	void SimulatonThread::OnFinishRunning()

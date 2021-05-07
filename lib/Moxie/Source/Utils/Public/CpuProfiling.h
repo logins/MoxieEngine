@@ -11,7 +11,6 @@
 
 #include <cvmarkersobj.h>
 
-namespace Mox {
 
 #define ENABLE_CPU_MARKERS _DEBUG
 
@@ -19,17 +18,18 @@ namespace Mox {
 
 #if CONCURRENCY_VISUALIZER
 
-Concurrency::diagnostic::marker_series ppa_series("Moxie");
+#define DEFINE_CPU_MARKER_SERIES(InName) \
+	static Concurrency::diagnostic::marker_series mks##InName(#InName);
 
-#define CPU_MARKER_SPAN(InStr, ...) \
-	Concurrency::diagnostic::span mySpan(Mox::ppa_series, InStr, __VA_ARGS__); 
+#define CPU_MARKER_SPAN(InSeriesName, InStr, ...) \
+	Concurrency::diagnostic::span mySpan(mks##InSeriesName, InStr, __VA_ARGS__);
 
 #else
 
-#define CPU_MARK_SPAN(InSpanName)
+#define DEFINE_CPU_MARKER_SERIES(InName)
+#define CPU_MARKER_SPAN(InSeriesName, InStr, ...)
 
 #endif
 
-}
 
 #endif // CpuProfiling_h__

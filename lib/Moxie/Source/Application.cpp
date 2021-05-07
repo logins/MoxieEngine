@@ -13,6 +13,7 @@
 #include "Graphics/Public/Device.h"
 #include "Graphics/Public/CommandList.h"
 #include "Simulator.h"
+#include "Renderer.h"
 
 namespace Mox
 {
@@ -58,6 +59,8 @@ namespace Mox
 
 		m_Simulator = std::make_unique<Mox::SimulatonThread>();
 
+		m_Renderer = std::make_unique<Mox::RenderThread>();
+
 		Mox::WindowInitInput mainWindowInput = {
 		L"DX12WindowClass", L"Main Window",
 		*m_Simulator->GetCmdQueue(),
@@ -92,6 +95,8 @@ namespace Mox
 
 		m_MainWindow->ShowWindow();
 
+
+		m_Renderer->Run();
 
 		// Application's main loop is based on received window messages, specifically WM_PAINT will trigger Update() and Render()
 		MSG windowMessage = {};
@@ -132,6 +137,41 @@ namespace Mox
 	void Application::OnQuitApplication()
 	{
 
+	}
+
+	void Application::WaitForFrameStart_SimThread()
+	{
+		// --- Critical Section ---
+		std::unique_lock<std::mutex> simFrameLock(m_FramesMutex);
+		m_SimToRenderFrameCondVar.wait(simFrameLock, [&] { return  m_DoneRenderFrameNum + 1 >= m_DoneSimFrameNum; }); // If the Render thread is behind, we will wait for it
+
+	}
+
+	void Application::WaitForFrameStart_RenderThread()
+	{
+		// --- Critical Section ---
+		std::unique_lock<std::mutex> renderFrameLock(m_FramesMutex);
+		m_SimToRenderFrameCondVar.wait(renderFrameLock, [&] { return m_DoneSimFrameNum > m_DoneRenderFrameNum; }); // Render thread needs to be at least 1 frame behind the sim one
+	}
+
+	void Application::NotifyFrameEnd_SimThread()
+	{
+		// --- Critical Section ---
+		{
+			std::lock_guard<std::mutex> simFrameLock(m_FramesMutex);
+			m_DoneSimFrameNum++;
+		}
+		m_SimToRenderFrameCondVar.notify_one();
+	}
+
+	void Application::NotifyFrameEnd_RenderThread()
+	{
+		// --- Critical Section ---
+		{
+			std::lock_guard<std::mutex> renderFrameLock(m_FramesMutex);
+			m_DoneRenderFrameNum++;
+		}
+		m_SimToRenderFrameCondVar.notify_one();
 	}
 
 	void Application::SetFov(float InFov)

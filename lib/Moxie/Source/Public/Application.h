@@ -12,6 +12,7 @@
 #include "MoxUtils.h"
 #include "MoxMath.h"
 #include "ContextView.h"
+#include <mutex>
 
 namespace Mox {
 	
@@ -22,6 +23,7 @@ namespace Mox {
 		struct ViewPort;
 		class CommandList;
 		class SimulatonThread;
+		class RenderThread;
 		class Entity;
 
 	/*!
@@ -61,6 +63,12 @@ namespace Mox {
 		static constexpr uint32_t GetMaxConcurrentFramesNum() { return Mox::Constants::g_MaxConcurrentFramesNum; };
 
 		virtual void OnQuitApplication();
+
+		void WaitForFrameStart_SimThread();
+		void WaitForFrameStart_RenderThread();
+		void NotifyFrameEnd_SimThread();
+		void NotifyFrameEnd_RenderThread();
+
 	protected:
 
 		virtual void OnInitializeContent() = 0;
@@ -87,11 +95,20 @@ namespace Mox {
 
 		Mox::Window* m_MainWindow;
 
-
 		bool m_IsInitialized = false;
 
-		std::unique_ptr<Mox::SimulatonThread> m_Simulator;
+		// Inter-thread communication
 
+		std::unique_ptr<Mox::SimulatonThread> m_Simulator;
+		std::unique_ptr<Mox::RenderThread> m_Renderer;
+		// Used to sync frames numbers between sim and render threads
+		std::mutex m_FramesMutex;
+		std::condition_variable m_SimToRenderFrameCondVar;
+		// The following two variables are used for inter-thread frame syncing between Simulation and Render thread:
+		// Simulation frame n will start only when the previous n-1 render frame is done
+		// and, at the same time, Render frame will start only when current simulation data has been computed
+		uint64_t m_DoneRenderFrameNum = 0;
+		uint64_t m_DoneSimFrameNum = 0;
 
 	private:
 		Application(const Application&) = delete; // We do not want Application to be copiable

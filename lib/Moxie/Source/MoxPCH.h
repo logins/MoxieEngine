@@ -32,6 +32,6 @@
 #include <d3dcompiler.h>
 #include <d3dx12.h>
 #include <functional>
-
+#include <mutex>
 
 #include "Delegate.h"

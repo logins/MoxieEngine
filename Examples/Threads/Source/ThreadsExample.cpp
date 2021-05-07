@@ -9,6 +9,8 @@
 #include "MoxUtils.h"
 #include "CpuProfiling.h"
 
+DEFINE_CPU_MARKER_SERIES(MyMarkerSeries)
+
 int main()
 {
 	// Mutithreading test
@@ -22,7 +24,7 @@ int main()
 	{
 		taskSystem.Enqueue([i] {
 
-			CPU_MARKER_SPAN("Task %d", i)
+			CPU_MARKER_SPAN(MyMarkerSeries, "Task %d", i)
 
 			auto a = std::chrono::steady_clock::now();
 			auto timeToWait = std::chrono::seconds((std::rand() % maxSingleTaskSeconds) + 1);

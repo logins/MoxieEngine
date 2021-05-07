@@ -93,6 +93,7 @@ private:
 	std::unique_ptr<Mox::D3D12LinearBufferAllocator> m_DynamicBufferAllocator;
 
 	std::unique_ptr<Mox::D3D12DescHeapFactory> m_DescHeapFactory;
+	uint64_t m_FrameCounter = 0;
 };
 	
 

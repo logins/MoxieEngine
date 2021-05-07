@@ -19,6 +19,7 @@
 #include "CommandList.h"
 #include "MoxMath.h"
 #include "Simulator.h"
+#include "Renderer.h"
 #include "Entity.h"
 
 
@@ -56,7 +57,7 @@ void DynBufExampleApp::OnInitializeContent()
 	m_PipelineState = &Mox::AllocatePipelineState();
 
 	// Load Content
-	Mox::CommandList& loadContentCmdList = m_Simulator->GetCmdQueue()->GetAvailableCommandList(); // TODO Cmd Queue will need to be part of the Renderer
+	Mox::CommandList& loadContentCmdList = m_Renderer->GetCmdQueue()->GetAvailableCommandList(); // TODO renderer should not need to be exposed to the derived application
 
 	// Upload vertex buffer data
 	Mox::Resource& intermediateVertexBuffer = Mox::GraphicsAllocator::Get()->AllocateEmptyResource(); // Note: we are allocating intermediate buffer that will not be used anymore later on but will stay in memory (leak)
@@ -131,9 +132,9 @@ void DynBufExampleApp::OnInitializeContent()
 	m_PipelineState->Init(pipelineStateDesc);
 
 	// Executing command list and waiting for full execution
-	m_Simulator->GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
+	m_Renderer->GetCmdQueue()->ExecuteCmdList(loadContentCmdList); // TODO renderer should not need to be exposed to the derived application
 
-	m_Simulator->GetCmdQueue()->Flush();
+	m_Renderer->GetCmdQueue()->Flush(); // TODO renderer should not need to be exposed to the derived application
 
 	// Initialize the Model Matrix
 	m_CubeEntity = &AddEntity();

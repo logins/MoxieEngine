@@ -48,9 +48,9 @@ namespace Mox {
 
 		Microsoft::WRL::ComPtr<ID3D12Device2> GetD3D12Device() const { return m_Device; };
 
-		virtual void OnCpuFrameStarted() override;
+		virtual void OnRenderFrameStarted() override;
 
-		virtual void OnCpuFrameFinished() override;
+		virtual void OnRenderFrameFinished() override;
 
 		virtual uint64_t ComputeFramesInFlightNum() override;
 
@@ -86,7 +86,7 @@ namespace Mox {
 		Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence;
 		HANDLE m_FenceEvent;
 		uint64_t m_LastSeenFenceValue = 0;
-		std::queue<uint64_t> m_CpuFrameCompleteFenceValues;
+		std::queue<uint64_t> m_RenderFrameCompleteFenceValues;
 		D3D12CmdAllocatorQueue m_CmdAllocators;
 		D3D12CmdListQueue m_CmdLists;
 

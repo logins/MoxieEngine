@@ -193,14 +193,14 @@ namespace Mox {
 		Mox::FlushCmdQueue(m_CmdQueue, m_Fence, m_FenceEvent, m_LastSeenFenceValue);
 	}
 
-	void D3D12CommandQueue::OnCpuFrameStarted()
+	void D3D12CommandQueue::OnRenderFrameStarted()
 	{
 
 	}
 
-	void D3D12CommandQueue::OnCpuFrameFinished()
+	void D3D12CommandQueue::OnRenderFrameFinished()
 	{
-		m_CpuFrameCompleteFenceValues.push(Signal());
+		m_RenderFrameCompleteFenceValues.push(Signal());
 
 		// Note: If we were in a multi-threaded environment, we would be (at least) 1 frame delay from the main thread, and so more mechanics would have to be in place.
 		// More details here: https://docs.microsoft.com/en-us/windows/win32/direct3d12/user-mode-heap-synchronization
@@ -211,27 +211,27 @@ namespace Mox {
 		// Checking for any finished frames on GPU side and update relative variables
 		const uint64_t currentFenceValue = m_Fence->GetCompletedValue();
 
-		while (!m_CpuFrameCompleteFenceValues.empty() && m_CpuFrameCompleteFenceValues.front() <= currentFenceValue)
+		while (!m_RenderFrameCompleteFenceValues.empty() && m_RenderFrameCompleteFenceValues.front() <= currentFenceValue)
 		{
-			m_CpuFrameCompleteFenceValues.pop();
+			m_RenderFrameCompleteFenceValues.pop();
 			m_CompletedGPUFramesNum++;
 		}
-		return m_CpuFrameCompleteFenceValues.size();
+		return m_RenderFrameCompleteFenceValues.size();
 	}
 
 	void D3D12CommandQueue::WaitForQueuedFramesOnGpu(uint64_t InFramesToWaitNum)
 	{
-		Check(InFramesToWaitNum <= m_CpuFrameCompleteFenceValues.size());
+		Check(InFramesToWaitNum <= m_RenderFrameCompleteFenceValues.size());
 		// We just need to wait for the last frame of the ones we are interested in
 		// because when that executes we are sure that all the others finished first.
 		while (InFramesToWaitNum > 1)
 		{
-			m_CpuFrameCompleteFenceValues.pop();
+			m_RenderFrameCompleteFenceValues.pop();
 			--InFramesToWaitNum;
 		}
 
-		WaitForFenceValue(m_CpuFrameCompleteFenceValues.front());
-		m_CpuFrameCompleteFenceValues.pop();
+		WaitForFenceValue(m_RenderFrameCompleteFenceValues.front());
+		m_RenderFrameCompleteFenceValues.pop();
 		
 	}
 

@@ -8,12 +8,10 @@
  
 #include "Application.h"
 #include "MoxGeometry.h"
-#include "Graphics/Public/Window.h"
-#include "Graphics/Public/GraphicsAllocator.h"
-#include "Graphics/Public/Device.h"
-#include "Graphics/Public/CommandList.h"
 #include "Simulator.h"
 #include "Renderer.h"
+#include "Graphics/Public/Window.h"
+#include "Graphics/Public/GraphicsAllocator.h"
 
 namespace Mox
 {
@@ -63,14 +61,14 @@ namespace Mox
 
 		Mox::WindowInitInput mainWindowInput = {
 		L"DX12WindowClass", L"Main Window",
-		*m_Simulator->GetCmdQueue(),
+		* m_Renderer->GetCmdQueue(),
 		mainWindowWidth, mainWindowHeight, // Window sizes
 		mainWindowWidth, mainWindowHeight, // BackBuffer sizes
 		false // vsync disabled to test max fps, but you can set it here if the used monitor allows tearing to happen
 		};
-		m_MainWindow = &Mox::GraphicsAllocator::Get()->AllocateWindow(mainWindowInput);
+		m_MainWindow = &Mox::GraphicsAllocator::Get()->AllocateWindow(mainWindowInput); // TODO move the window outside graphics allocator
 
-		m_Simulator->SetMainWindow(m_MainWindow);
+		m_Renderer->SetMainWindow(m_MainWindow);
 
 		// Wiring Window events
 		m_MainWindow->OnPaintDelegate.Add<Application, &Application::OnWindowPaint>(this);

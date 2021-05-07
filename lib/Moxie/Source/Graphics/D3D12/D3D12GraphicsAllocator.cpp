@@ -214,16 +214,17 @@ namespace Mox {
 
 	void D3D12GraphicsAllocator::OnNewFrameStarted()
 	{
-		// When a new frame starts, we are sure by the application that there are a total of Application::GetMaxConcurrentFramesNum() active,
-		// so we can use that number to divide the dynamic allocator circular memory pool in equal parts, and move the maximum allocation index each time we have a new frame.
-		// The rest of memory is considered off limits since their relative frames are still in flight.
-		auto currentFrameNum = Application::Get()->GetCurrentFrameNumber();
-		float currentFramePartition = (Application::Get()->GetCurrentFrameNumber() % Application::GetMaxConcurrentFramesNum() ) / static_cast<float>(Application::GetMaxConcurrentFramesNum());
-		static const float fractionSize = 1.0f / Application::GetMaxConcurrentFramesNum();
+		// The number of partitions considered by the graphics allocator will be equal to 
+		// the number of max Gpu frames in flight + the current one being computed by the renderer.
+		static const uint64_t totalPartitionsNum = Application::GetMaxGpuConcurrentFramesNum() + 1;
+		float currentFramePartition = (m_FrameCounter % totalPartitionsNum) / static_cast<float>(totalPartitionsNum);
+		static const float fractionSize = 1.0f / totalPartitionsNum;
 
 		m_DynamicBufferAllocator->SetAdmittedAllocationRegion(currentFramePartition, currentFramePartition + fractionSize);
 
 		GetGpuHeap().SetAllowedDynamicAllocationRegion(currentFramePartition, currentFramePartition + fractionSize);
+
+		m_FrameCounter++;
 	}
 
 	void D3D12GraphicsAllocator::Initialize()

@@ -9,6 +9,8 @@
 #ifndef Entity_h__
 #define Entity_h__
 
+#include "MoxMath.h"
+
 namespace Mox {
 
 // Object seen by the simulator

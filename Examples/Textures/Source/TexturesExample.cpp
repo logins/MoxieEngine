@@ -19,6 +19,7 @@
 #include "CommandList.h"
 #include "Entity.h"
 #include "Simulator.h"
+#include "Renderer.h"
 
 
 #define TEXTURES_EXAMPLE_SHADERS_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
@@ -45,7 +46,7 @@ int main()
 void TexturesExampleApplication::OnInitializeContent()
 {
 	// Load Content
-	Mox::CommandList& loadContentCmdList = m_Simulator->GetCmdQueue()->GetAvailableCommandList();
+	Mox::CommandList& loadContentCmdList = m_Renderer->GetCmdQueue()->GetAvailableCommandList();
 
 	// --- Vertex Buffer ---
 	size_t vertexDataSize = sizeof(VertexPosColor) * _countof(m_VertexData);
@@ -223,9 +224,9 @@ void TexturesExampleApplication::OnInitializeContent()
 	loadContentCmdList.Dispatch(mip1SizeAligned / 8, mip1SizeAligned / 8, 6);
 
 	// Executing command list and waiting for full execution
-	m_Simulator->GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
+	m_Renderer->GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
 
-	m_Simulator->GetCmdQueue()->Flush(); // Note: Flushing operations on the command queue here will ensure that all the operations made on resources by the loadContentCmdList finished executing!
+	m_Renderer->GetCmdQueue()->Flush(); // Note: Flushing operations on the command queue here will ensure that all the operations made on resources by the loadContentCmdList finished executing!
 
 	// --- MIPS GENERATION ENDS ---
 

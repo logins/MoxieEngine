@@ -36,9 +36,9 @@ class CommandList;
 
 		virtual void Flush() = 0;
 
-		virtual void OnCpuFrameStarted() = 0;
+		virtual void OnRenderFrameStarted() = 0;
 
-		virtual void OnCpuFrameFinished() = 0;
+		virtual void OnRenderFrameFinished() = 0;
 
 		virtual uint64_t ComputeFramesInFlightNum() = 0;
 

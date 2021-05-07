@@ -60,7 +60,7 @@ namespace Mox {
 
 		uint64_t GetCurrentFrameNumber();
 
-		static constexpr uint32_t GetMaxConcurrentFramesNum() { return Mox::Constants::g_MaxConcurrentFramesNum; };
+		static constexpr uint32_t GetMaxGpuConcurrentFramesNum() { return Mox::Constants::g_MaxConcurrentFramesNum; };
 
 		virtual void OnQuitApplication();
 

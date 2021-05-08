@@ -42,10 +42,8 @@ namespace Mox {
 
 		uint64_t GetCpuFrameNumber() { return m_CpuFrameNumber; }
 
+
 	private:
-
-
-		float m_DeltaTime = 0.f;
 
 		void OnCpuFrameStarted();
 

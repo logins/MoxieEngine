@@ -204,12 +204,9 @@ void DynBufExampleApp::OnControlKeyPressed(Mox::KEYBOARD_KEY InPressedSysKey)
 
 void DynBufExampleApp::UpdateContent(float InDeltaTime)
 {
-
-
 	// Updating color modifier
-	float counter = 1.f;
-	static float progress = 0.f;
-	counter = 0.5f + std::sin(progress) / 2.f;
+	static float progress, counter = 0.f;
+	counter = 0.5f + std::sin(progress) / 2.f; // TODO find a way (event) to transfer the buffer information to the render thread
 	progress += 0.002f * InDeltaTime;
 
 	m_ColorModBuffer->SetData(&counter, sizeof(counter), sizeof(float));
@@ -219,6 +216,8 @@ void DynBufExampleApp::RenderMainView(Mox::CommandList & InCmdList, const Mox::C
 {	
 	// Updating cube MVP matrix
 	m_MvpMatrix = InMainView.m_ProjMatrix * InMainView.m_ViewMatrix * m_CubeEntity->m_ModelMatrix;
+
+
 
 	// Fill Command List Pipeline-related Data
 	{

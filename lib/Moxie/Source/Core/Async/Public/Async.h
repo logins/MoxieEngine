@@ -12,9 +12,14 @@
 namespace Mox {
 
 class SystemThread {
-
+public:
 	virtual void Run() = 0;
 
+	// Note: reading this variable from other threads is usually subject to race conditions and it is used as a generic indicator only
+	inline float GetCurrentFrameTime() const { return m_DeltaTime; }
+
+protected:
+	float m_DeltaTime = 0.f;
 };
 
 }

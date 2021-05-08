@@ -89,14 +89,19 @@ void RenderThread::RunThread()
 {
 	while (true)
 	{
-
 		OnRenderFrameStarted();
 
+		static std::chrono::high_resolution_clock clock;
+		auto t0 = clock.now();
 		{
 			CPU_MARKER_SPAN(Render, "Render %d", m_RenderFrameNumber);
 
 			RenderMainView();
 		}
+		auto t1 = clock.now();
+		auto deltaTime = t1 - t0;
+		m_DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(deltaTime).count() / 1000.f; // Delta Time expressed in Milliseconds: 10^-3 seconds
+		t0 = t1;
 
 		OnRenderFrameFinished();
 	}

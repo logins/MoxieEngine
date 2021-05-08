@@ -100,6 +100,11 @@ namespace Mox
 		MSG windowMessage = {};
 		while (windowMessage.message != WM_QUIT)
 		{
+			static double elapsedSeconds = 0;
+			static uint32_t perSecondFrameNum = 0;
+			static std::chrono::steady_clock clock;
+			auto t0 = clock.now();
+
 			if (::PeekMessage(&windowMessage, NULL, 0, 0, PM_REMOVE))
 			{
 				::TranslateMessage(&windowMessage);
@@ -110,6 +115,22 @@ namespace Mox
 				continue;
 
 			m_Simulator->Update();
+
+			auto t1 = clock.now();
+			elapsedSeconds += std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0).count(); // fractional seconds
+			perSecondFrameNum++;
+			t0 = t1;
+
+			if (elapsedSeconds > 1.0f)
+			{
+				char buffer[500];
+				sprintf_s(buffer, 500, "Average FPS: %.0f (Simulation %.2fms, Render %.2fms)\n", 
+					perSecondFrameNum / elapsedSeconds, m_SimulationFrameTime, m_RenderFrameTime);
+				OutputDebugStringA(buffer);
+
+				perSecondFrameNum = 0;
+				elapsedSeconds = .0f;
+			}
 		}
 
 		m_Simulator->OnFinishRunning();
@@ -143,6 +164,8 @@ namespace Mox
 		std::unique_lock<std::mutex> simFrameLock(m_FramesMutex);
 		m_SimToRenderFrameCondVar.wait(simFrameLock, [&] { return  m_DoneRenderFrameNum + 1 >= m_DoneSimFrameNum; }); // If the Render thread is behind, we will wait for it
 
+		// Syncing data from Simulator to Application
+		m_SimulationFrameTime = m_Simulator->GetCurrentFrameTime();
 	}
 
 	void Application::WaitForFrameStart_RenderThread()
@@ -150,6 +173,9 @@ namespace Mox
 		// --- Critical Section ---
 		std::unique_lock<std::mutex> renderFrameLock(m_FramesMutex);
 		m_SimToRenderFrameCondVar.wait(renderFrameLock, [&] { return m_DoneSimFrameNum > m_DoneRenderFrameNum; }); // Render thread needs to be at least 1 frame behind the sim one
+	
+		// Syncing data from Renderer to Application
+		m_RenderFrameTime = m_Renderer->GetCurrentFrameTime();
 	}
 
 	void Application::NotifyFrameEnd_SimThread()

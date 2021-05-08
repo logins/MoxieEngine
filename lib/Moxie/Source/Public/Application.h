@@ -115,6 +115,9 @@ namespace Mox {
 		Application& operator=(const Application&) = delete; // We do not want Application to be copy assignable
 
 		bool m_PaintStarted = false;
+
+		float m_SimulationFrameTime;
+		float m_RenderFrameTime;
 	};
 }
 #endif // Application_h__

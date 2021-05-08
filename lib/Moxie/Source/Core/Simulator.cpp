@@ -32,42 +32,25 @@ namespace Mox {
 
 	void SimulatonThread::Update()
 	{
-
-		static double elapsedSeconds = 0;
-		static uint64_t frameNumberPerSecond = 0;
-		static std::chrono::high_resolution_clock clock;
-		auto t0 = clock.now();
-
 		OnCpuFrameStarted();
+
+		static std::chrono::steady_clock clock;
+		auto t0 = clock.now();
 		{
-		CPU_MARKER_SPAN(Simulate, "Simulate %d", m_CpuFrameNumber);
+			CPU_MARKER_SPAN(Simulate, "Simulate %d", m_CpuFrameNumber);
 
 			Application::Get()->UpdateContent(m_DeltaTime);
 
 		}
+		auto t1 = clock.now();
+		auto deltaTime = t1 - t0;
+		m_DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(deltaTime).count() / 1000.f; // Delta Time expressed in Milliseconds: 10^-3 seconds
+		t0 = t1;
+
 		// Frame on CPU side finished computing, send the notice
 		OnCpuFrameFinished();
 
 		m_CpuFrameNumber++;
-		frameNumberPerSecond++;
-
-		auto t1 = clock.now();
-		auto deltaTime = t1 - t0;
-
-		m_DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(deltaTime).count() / 1000.f; // Delta Time expressed in Milliseconds: 10^-3 seconds
-
-		t0 = t1;
-		elapsedSeconds += deltaTime.count() * 1e-9; // Conversion from nanoseconds into seconds
-
-		if (elapsedSeconds > 1.0)
-		{
-			char buffer[500]; auto fps = frameNumberPerSecond / elapsedSeconds;
-			sprintf_s(buffer, 500, "Average FPS: %f\n", fps);
-			OutputDebugStringA(buffer);
-
-			frameNumberPerSecond = 0;
-			elapsedSeconds = .0f;
-		}
 	}
 
 	void SimulatonThread::OnCpuFrameStarted()

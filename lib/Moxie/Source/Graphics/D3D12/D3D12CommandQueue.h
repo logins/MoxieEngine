@@ -54,7 +54,7 @@ namespace Mox {
 
 		virtual uint64_t ComputeFramesInFlightNum() override;
 
-		virtual void WaitForQueuedFramesOnGpu(uint64_t InFramesToWaitNum) override;
+		virtual void WaitForGpuFrames(uint64_t InFramesToWaitNum) override;
 
 	private:
 		uint64_t m_CompletedGPUFramesNum = 0;
@@ -84,9 +84,11 @@ namespace Mox {
 		Microsoft::WRL::ComPtr<ID3D12Device2> m_Device;
 
 		Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence;
+		// Used exclusively to keep track of the completed frames on Gpu
+		Microsoft::WRL::ComPtr<ID3D12Fence> m_GpuFrameFence;
 		HANDLE m_FenceEvent;
 		uint64_t m_LastSeenFenceValue = 0;
-		std::queue<uint64_t> m_RenderFrameCompleteFenceValues;
+		uint64_t m_CompletedRenderFrames = 0;
 		D3D12CmdAllocatorQueue m_CmdAllocators;
 		D3D12CmdListQueue m_CmdLists;
 

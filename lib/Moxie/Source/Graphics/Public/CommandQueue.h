@@ -42,7 +42,7 @@ class CommandList;
 
 		virtual uint64_t ComputeFramesInFlightNum() = 0;
 
-		virtual void WaitForQueuedFramesOnGpu(uint64_t InFramesToWaitNum) = 0;
+		virtual void WaitForGpuFrames(uint64_t InFramesToWaitNum) = 0;
 
 	};
 

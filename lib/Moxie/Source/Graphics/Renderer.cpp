@@ -117,7 +117,7 @@ void RenderThread::OnRenderFrameStarted()
 	const int64_t framesToWaitNum = m_CmdQueue->ComputeFramesInFlightNum() - Application::GetMaxGpuConcurrentFramesNum();
 	if (framesToWaitNum > 0)
 	{
-		m_CmdQueue->WaitForQueuedFramesOnGpu(framesToWaitNum);
+		m_CmdQueue->WaitForGpuFrames(framesToWaitNum);
 	}
 
 	// Trigger all the begin CPU frame mechanics

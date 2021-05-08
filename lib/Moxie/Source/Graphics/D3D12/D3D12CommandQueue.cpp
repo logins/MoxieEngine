@@ -39,7 +39,8 @@ namespace Mox {
 
 		m_CmdQueue = Mox::CreateCommandQueue(InDevice, InCmdListType);
 
-		m_Fence = Mox::CreateFence(InDevice);
+		m_Fence = Mox::CreateFence(InDevice); // TODO change name of this fence since it is too generic
+		m_GpuFrameFence = Mox::CreateFence(InDevice);
 		m_FenceEvent = Mox::CreateFenceEventHandle();
 
 		IsInitialized = true;
@@ -200,39 +201,22 @@ namespace Mox {
 
 	void D3D12CommandQueue::OnRenderFrameFinished()
 	{
-		m_RenderFrameCompleteFenceValues.push(Signal());
+		m_CompletedRenderFrames++;
 
-		// Note: If we were in a multi-threaded environment, we would be (at least) 1 frame delay from the main thread, and so more mechanics would have to be in place.
-		// More details here: https://docs.microsoft.com/en-us/windows/win32/direct3d12/user-mode-heap-synchronization
+		// When a render frame finishes, we signal it in the command queue work, so we can figure out later when Gpu work finished executing for a particular frame
+		ThrowIfFailed(m_CmdQueue->Signal(m_GpuFrameFence.Get(), m_CompletedRenderFrames));
 	}
 
 	uint64_t D3D12CommandQueue::ComputeFramesInFlightNum()
 	{
-		// Checking for any finished frames on GPU side and update relative variables
-		const uint64_t currentFenceValue = m_Fence->GetCompletedValue();
-
-		while (!m_RenderFrameCompleteFenceValues.empty() && m_RenderFrameCompleteFenceValues.front() <= currentFenceValue)
-		{
-			m_RenderFrameCompleteFenceValues.pop();
-			m_CompletedGPUFramesNum++;
-		}
-		return m_RenderFrameCompleteFenceValues.size();
+		return m_CompletedRenderFrames - m_GpuFrameFence->GetCompletedValue();
 	}
 
-	void D3D12CommandQueue::WaitForQueuedFramesOnGpu(uint64_t InFramesToWaitNum)
+	void D3D12CommandQueue::WaitForGpuFrames(uint64_t InFramesToWait)
 	{
-		Check(InFramesToWaitNum <= m_RenderFrameCompleteFenceValues.size());
-		// We just need to wait for the last frame of the ones we are interested in
-		// because when that executes we are sure that all the others finished first.
-		while (InFramesToWaitNum > 1)
-		{
-			m_RenderFrameCompleteFenceValues.pop();
-			--InFramesToWaitNum;
-		}
+		Check(m_GpuFrameFence->GetCompletedValue() + InFramesToWait <= m_CompletedRenderFrames)
 
-		WaitForFenceValue(m_RenderFrameCompleteFenceValues.front());
-		m_RenderFrameCompleteFenceValues.pop();
-		
+		Mox::WaitForFenceValue(m_GpuFrameFence, m_GpuFrameFence->GetCompletedValue() + InFramesToWait, m_FenceEvent);
 	}
 
 }

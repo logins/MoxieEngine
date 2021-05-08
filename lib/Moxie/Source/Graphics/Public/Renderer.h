@@ -27,11 +27,15 @@ namespace Mox {
 
 		virtual void Run() override;
 
+
+
 		inline uint64_t GetCurrentRenderFrame() const { return m_CurrentRenderFrame; }
 
 		Mox::CommandQueue* GetCmdQueue() { return m_CmdQueue; }
 
 		void SetMainWindow(Mox::Window* InMainWindow);
+
+
 	private:
 
 		void RenderMainView();
@@ -59,8 +63,8 @@ namespace Mox {
 
 		uint64_t m_CurrentRenderFrame = 0;
 
-		std::thread m_InnerThread;
 		uint64_t m_RenderFrameNumber = 0;
+
 	};
 }
 #endif // Renderer_h__

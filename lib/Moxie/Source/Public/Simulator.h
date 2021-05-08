@@ -40,7 +40,7 @@ namespace Mox {
 
 		Mox::Entity& AddEntity();
 
-		uint64_t GetCpuFrameNumber() { return m_CpuFrameNumber; }
+		uint64_t GetCpuFrameNumber() { return m_SimulationFrameNumber; }
 
 
 	private:
@@ -53,7 +53,7 @@ namespace Mox {
 
 		std::vector<Mox::Entity> m_WorldEntities;
 
-		uint64_t m_CpuFrameNumber = 1;
+		uint64_t m_SimulationFrameNumber = 1;
 
 	};
 

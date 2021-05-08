@@ -35,7 +35,7 @@ RenderThread::RenderThread()
 
 void RenderThread::Run()
 {
-	m_InnerThread = std::thread([&] { RunThread(); });
+	m_InnerThread = std::make_unique<std::thread>([&] { RunThread(); });
 }
 
 void RenderThread::RenderMainView()
@@ -89,6 +89,13 @@ void RenderThread::RunThread()
 {
 	while (true)
 	{
+		// Sync data with the application, if it returns false it means the application is ending and so does the render thread
+		if (!Application::Get()->SyncForFrameStart_RenderThread())
+		{
+			OnFinishRunning();
+			return;
+		}
+
 		OnRenderFrameStarted();
 
 		static std::chrono::high_resolution_clock clock;
@@ -104,14 +111,13 @@ void RenderThread::RunThread()
 		t0 = t1;
 
 		OnRenderFrameFinished();
+
+		Application::Get()->SyncForFrameEnd_RenderThread();
 	}
 }
 
 void RenderThread::OnRenderFrameStarted()
 {
-	// Stall up until sim thread completed the next frame
-	Application::Get()->WaitForFrameStart_RenderThread();
-
 	// Checking if we are too far in frame computation compared to the GPU work.
 	// If it is the case, wait for completion
 	const int64_t framesToWaitNum = m_CmdQueue->ComputeFramesInFlightNum() - Application::GetMaxGpuConcurrentFramesNum();
@@ -132,8 +138,6 @@ void RenderThread::OnRenderFrameFinished()
 	m_CmdQueue->OnRenderFrameFinished();
 
 	m_RenderFrameNumber++;
-
-	Application::Get()->NotifyFrameEnd_RenderThread();
 }
 
 void RenderThread::SetMainWindow(Mox::Window* InMainWindow)
@@ -144,7 +148,7 @@ void RenderThread::SetMainWindow(Mox::Window* InMainWindow)
 
 }
 
-void RenderThread::OnFinishRunning() // TODO need to call this!
+void RenderThread::OnFinishRunning()
 {
 	// Finish all the render commands currently in flight
 	m_CmdQueue->Flush();

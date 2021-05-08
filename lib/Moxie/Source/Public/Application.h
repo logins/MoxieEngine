@@ -64,10 +64,11 @@ namespace Mox {
 
 		virtual void OnQuitApplication();
 
-		void WaitForFrameStart_SimThread();
-		void WaitForFrameStart_RenderThread();
-		void NotifyFrameEnd_SimThread();
-		void NotifyFrameEnd_RenderThread();
+		bool SyncForFrameStart_SimThread();
+		bool SyncForFrameStart_RenderThread();
+		void SyncForFrameEnd_SimThread();
+		void SyncForFrameEnd_RenderThread();
+
 
 	protected:
 
@@ -114,10 +115,15 @@ namespace Mox {
 		Application(const Application&) = delete; // We do not want Application to be copiable
 		Application& operator=(const Application&) = delete; // We do not want Application to be copy assignable
 
+		// Will set m_IsTerminating to true so the threads will stop generating frames
+		void OrderThreadsTermination();
+
 		bool m_PaintStarted = false;
 
 		float m_SimulationFrameTime;
 		float m_RenderFrameTime;
+
+		bool m_IsTerminating = false;
 	};
 }
 #endif // Application_h__

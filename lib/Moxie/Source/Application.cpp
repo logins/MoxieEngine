@@ -133,6 +133,9 @@ namespace Mox
 			}
 		}
 
+		OrderThreadsTermination();
+		// Wait for the render thread to terminate since it will release resources
+		m_Renderer->Join();
 		m_Simulator->OnFinishRunning();
 
 		OnQuitApplication();
@@ -158,27 +161,37 @@ namespace Mox
 
 	}
 
-	void Application::WaitForFrameStart_SimThread()
+	bool Application::SyncForFrameStart_SimThread()
 	{
 		// --- Critical Section ---
 		std::unique_lock<std::mutex> simFrameLock(m_FramesMutex);
+		if (m_IsTerminating)
+			return false;
+		
 		m_SimToRenderFrameCondVar.wait(simFrameLock, [&] { return  m_DoneRenderFrameNum + 1 >= m_DoneSimFrameNum; }); // If the Render thread is behind, we will wait for it
 
 		// Syncing data from Simulator to Application
 		m_SimulationFrameTime = m_Simulator->GetCurrentFrameTime();
+
+		return true;
 	}
 
-	void Application::WaitForFrameStart_RenderThread()
+	bool Application::SyncForFrameStart_RenderThread()
 	{
 		// --- Critical Section ---
 		std::unique_lock<std::mutex> renderFrameLock(m_FramesMutex);
+		if (m_IsTerminating)
+			return false;
+		
 		m_SimToRenderFrameCondVar.wait(renderFrameLock, [&] { return m_DoneSimFrameNum > m_DoneRenderFrameNum; }); // Render thread needs to be at least 1 frame behind the sim one
 	
 		// Syncing data from Renderer to Application
 		m_RenderFrameTime = m_Renderer->GetCurrentFrameTime();
+
+		return true;
 	}
 
-	void Application::NotifyFrameEnd_SimThread()
+	void Application::SyncForFrameEnd_SimThread()
 	{
 		// --- Critical Section ---
 		{
@@ -188,7 +201,7 @@ namespace Mox
 		m_SimToRenderFrameCondVar.notify_one();
 	}
 
-	void Application::NotifyFrameEnd_RenderThread()
+	void Application::SyncForFrameEnd_RenderThread()
 	{
 		// --- Critical Section ---
 		{
@@ -196,6 +209,13 @@ namespace Mox
 			m_DoneRenderFrameNum++;
 		}
 		m_SimToRenderFrameCondVar.notify_one();
+	}
+
+	void Application::OrderThreadsTermination()
+	{
+		// --- Critical Section ---
+		std::lock_guard<std::mutex> simFrameLock(m_FramesMutex);
+		m_IsTerminating = true;
 	}
 
 	void Application::SetFov(float InFov)

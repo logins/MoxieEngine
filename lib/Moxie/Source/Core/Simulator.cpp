@@ -37,7 +37,7 @@ namespace Mox {
 		static std::chrono::steady_clock clock;
 		auto t0 = clock.now();
 		{
-			CPU_MARKER_SPAN(Simulate, "Simulate %d", m_CpuFrameNumber);
+			CPU_MARKER_SPAN(Simulate, "Simulate %d", m_SimulationFrameNumber);
 
 			Application::Get()->UpdateContent(m_DeltaTime);
 
@@ -47,22 +47,20 @@ namespace Mox {
 		m_DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(deltaTime).count() / 1000.f; // Delta Time expressed in Milliseconds: 10^-3 seconds
 		t0 = t1;
 
-		// Frame on CPU side finished computing, send the notice
 		OnCpuFrameFinished();
 
-		m_CpuFrameNumber++;
+		Application::Get()->SyncForFrameEnd_SimThread();
 	}
 
 	void SimulatonThread::OnCpuFrameStarted()
 	{
-		Application::Get()->WaitForFrameStart_SimThread();
+		Application::Get()->SyncForFrameStart_SimThread();
 
 	}
 
 	void SimulatonThread::OnCpuFrameFinished()
 	{
-
-		Application::Get()->NotifyFrameEnd_SimThread();
+		m_SimulationFrameNumber++;
 	}
 
 	void SimulatonThread::OnFinishRunning()

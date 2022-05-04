@@ -1,7 +1,11 @@
 # ----- EXAMPLE: DYNAMIC BUFFER -----
 add_executable(example_dynbuf Source/DynamicBufferExample.cpp "Source/DynamicBufferExample.h")
 
-target_link_libraries(example_dynbuf moxie)
+if(NOT TARGET moxie)
+	message(FATAL_ERROR "Moxie not found!")
+endif()
+
+target_link_libraries(example_dynbuf PRIVATE moxie)
 
 target_include_directories( example_dynbuf
 	PRIVATE

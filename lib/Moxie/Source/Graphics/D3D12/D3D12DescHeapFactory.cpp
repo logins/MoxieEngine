@@ -116,6 +116,8 @@ namespace Mox {
 		
 		m_CPUDescHeap = std::make_unique<D3D12DescriptorHeap>(D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false, descriptorSize);
 		m_GPUDescHeap = std::make_unique<D3D12DescriptorHeap>(D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, descriptorSize, 256, 0.5f);
+
+		m_ResourceViewArray.reserve(100);
 	}
 
 	D3D12DescHeapFactory::~D3D12DescHeapFactory()

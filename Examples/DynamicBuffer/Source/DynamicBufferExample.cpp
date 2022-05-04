@@ -20,7 +20,8 @@
 #include "MoxMath.h"
 #include "Simulator.h"
 #include "Renderer.h"
-#include "Entity.h"
+#include "MoxEntity.h"
+#include "MoxMesh.h"
 
 
 #define PART3_SHADERS_PATH(NAME) LQUOTE(DYN_BUF_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
@@ -46,33 +47,18 @@ DynBufExampleApp::DynBufExampleApp() = default;
 
 void DynBufExampleApp::OnInitializeContent()
 {
-
-
-	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateEmptyResource();
-	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateEmptyResource();
-	m_ColorModBuffer = &Mox::AllocateDynamicBuffer();
-	m_VertexBufferView = &Mox::AllocateVertexBufferView();
-	m_IndexBufferView = &Mox::AllocateIndexBufferView();
-	m_ColorModBufferView = &Mox::GraphicsAllocator::Get()->AllocateConstantBufferView();
-	m_PipelineState = &Mox::AllocatePipelineState();
-
 	// Load Content
 	Mox::CommandList& loadContentCmdList = m_Renderer->GetCmdQueue()->GetAvailableCommandList(); // TODO renderer should not need to be exposed to the derived application
 
-	// Upload vertex buffer data
-	Mox::Resource& intermediateVertexBuffer = Mox::GraphicsAllocator::Get()->AllocateEmptyResource(); // Note: we are allocating intermediate buffer that will not be used anymore later on but will stay in memory (leak)
-	Mox::GraphicsAllocator::GraphicsAllocator::Get()->AllocateBufferCommittedResource(loadContentCmdList, *m_VertexBuffer, intermediateVertexBuffer, _countof(m_VertexData), sizeof(VertexPosColor), m_VertexData);
 
-	// Create the Vertex Buffer View associated to m_VertexBuffer
-	m_VertexBufferView->ReferenceResource(*m_VertexBuffer, sizeof(m_VertexData), sizeof(VertexPosColor));
+	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(loadContentCmdList, m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
+	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(loadContentCmdList, m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
+	m_ColorModBuffer = &Mox::AllocateDynamicBuffer(sizeof(float));
+	m_VertexBufferView = &Mox::AllocateVertexBufferView(*m_VertexBuffer);
+	m_IndexBufferView = &Mox::AllocateIndexBufferView(*m_IndexBuffer, Mox::BUFFER_FORMAT::R16_UINT); // Single channel 16 bits, because WORD = unsigned short = 2 bytes = 16 bits
+	m_ColorModBufferView = &Mox::GraphicsAllocator::Get()->AllocateConstantBufferView(*m_ColorModBuffer);
+	m_PipelineState = &Mox::AllocatePipelineState();
 
-	// Upload index buffer data
-	Mox::Resource& intermediateIndexBuffer = Mox::GraphicsAllocator::Get()->AllocateEmptyResource(); // Note: we are allocating intermediate buffer that will not be used anymore later on but will stay in memory (leak)
-
-	Mox::GraphicsAllocator::GraphicsAllocator::Get()->AllocateBufferCommittedResource(loadContentCmdList, *m_IndexBuffer, intermediateIndexBuffer, _countof(m_IndexData), sizeof(unsigned short), m_IndexData);
-
-	// Create the Index Buffer View associated to m_IndexBuffer
-	m_IndexBufferView->ReferenceResource(*m_IndexBuffer, sizeof(m_IndexData), Mox::BUFFER_FORMAT::R16_UINT); // Single channel 16 bits, because WORD = unsigned short = 2 bytes = 16 bits
 
 	// --- Shader Loading ---
 	// Note: to generate the .cso file I will be using the offline method, using fxc.exe integrated in visual studio (but downloadable separately).
@@ -136,9 +122,11 @@ void DynBufExampleApp::OnInitializeContent()
 
 	m_Renderer->GetCmdQueue()->Flush(); // TODO renderer should not need to be exposed to the derived application
 
-	// Initialize the Model Matrix
-	m_CubeEntity = &AddEntity();
-	m_CubeEntity->m_ModelMatrix = Eigen::Matrix4f::Identity();
+	// Create a mesh and assign it to a new world entity
+	static Mox::Mesh cubeMesh(Mox::Vector3i(0, 0, 0), Mox::Vector3f(0, 0, 0), *m_VertexBufferView, *m_IndexBufferView);
+
+
+	m_CubeEntity = &AddEntity({ Mox::Vector3i(0,0,0), {&cubeMesh} });
 
 	// Window events delegates
 	m_MainWindow->OnMouseMoveDelegate.Add<DynBufExampleApp, &DynBufExampleApp::OnMouseMove>(this);
@@ -173,21 +161,21 @@ void DynBufExampleApp::OnMouseMove(int32_t InX, int32_t InY)
 
 void DynBufExampleApp::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	Mox::AffineTransform<float, 3> tr;
+	Mox::AffineTransform<float, 3> tr;  // TODO use part of the model matrix for rotation instead of creating a new one!
 	tr.setIdentity();
 	tr.rotate(Mox::AngleAxisf(-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), Mox::Vector3f::UnitY()))
 		.rotate(Mox::AngleAxisf(-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), Mox::Vector3f::UnitX()));
 
-	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
+	m_CubeEntity->MultiplyModelMatrix(tr.matrix());
 }
 
 void DynBufExampleApp::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	Eigen::Transform<float, 3, Eigen::Affine> tr;
+	Eigen::Transform<float, 3, Eigen::Affine> tr;  // TODO use part of the model matrix for translation instead of creating a new one!
 	tr.setIdentity();
 	tr.translate(Eigen::Vector3f(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0));
 
-	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
+	m_CubeEntity->MultiplyModelMatrix(tr.matrix());
 }
 
 void DynBufExampleApp::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)
@@ -209,13 +197,12 @@ void DynBufExampleApp::UpdateContent(float InDeltaTime)
 	counter = 0.5f + std::sin(progress) / 2.f; // TODO find a way (event) to transfer the buffer information to the render thread
 	progress += 0.002f * InDeltaTime;
 
-	m_ColorModBuffer->SetData(&counter, sizeof(counter), sizeof(float));
 }
 
 void DynBufExampleApp::RenderMainView(Mox::CommandList & InCmdList, const Mox::ContextView& InMainView)
 {	
 	// Updating cube MVP matrix
-	m_MvpMatrix = InMainView.m_ProjMatrix * InMainView.m_ViewMatrix * m_CubeEntity->m_ModelMatrix;
+	m_CubeEntity->MultiplyModelMatrix(InMainView.m_ProjMatrix * InMainView.m_ViewMatrix);
 
 
 
@@ -233,7 +220,6 @@ void DynBufExampleApp::RenderMainView(Mox::CommandList & InCmdList, const Mox::C
 		// TODO move this computation inside the simulator by feching an array of entities and retrieve the model matrix and compute the MVP
 		InCmdList.SetGraphicsRootConstants(0, sizeof(Eigen::Matrix4f) / 4, m_MvpMatrix.data(), 0);
 
-		InCmdList.StoreAndReferenceDynamicBuffer(1, *m_ColorModBuffer, *m_ColorModBufferView);
 
 		InCmdList.DrawIndexed(_countof(m_IndexData));
 	}

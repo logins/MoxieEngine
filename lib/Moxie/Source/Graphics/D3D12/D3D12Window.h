@@ -75,6 +75,12 @@ namespace Mox {
 
 		virtual Mox::CpuDescHandle& GetCurrentDSVDescriptorHandle() override;
 
+
+		void ClearRtAndDs(Mox::CommandList& InCmdList) override;
+
+
+		virtual Mox::Resource& GetCurrentBackBuffer() override;
+
 	private:
 
 		void RegisterWindowClass(HINSTANCE hInst, const wchar_t* windowClassName, WNDPROC InWndProc);
@@ -87,9 +93,12 @@ namespace Mox {
 		void CreateSwapChain(ComPtr<ID3D12CommandQueue> InCmdQueue, uint32_t InBufWidth, uint32_t InBufHeight);
 
 		void UpdateDepthStencil();
-		void UpdateRenderTargetViews();
+		void UpdateBufferResourcesAndViews();
 
 		static LRESULT GlobalWndProc(HWND InHwnd, UINT InMsg, WPARAM InWParam, LPARAM InLParam);
+
+
+		std::vector<Mox::D3D12Resource> m_BackBuffers;
 
 		ComPtr<ID3D12Device2> m_CurrentDevice;
 		Mox::D3D12CommandQueue& m_CmdQueue;

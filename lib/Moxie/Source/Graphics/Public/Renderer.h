@@ -11,12 +11,14 @@
 
 #include "Async.h"
 #include "ContextView.h"
+#include "MoxRenderProxy.h"
 
 namespace Mox {
 
 	class Window;
 	class CommandQueue;
 	class GraphicsAllocatorBase;
+	class RenderPass;
 	/*
 	Handles all the rendering logic for the engine
 	*/
@@ -27,14 +29,16 @@ namespace Mox {
 
 		virtual void Run() override;
 
-
-
 		inline uint64_t GetCurrentRenderFrame() const { return m_CurrentRenderFrame; }
 
 		Mox::CommandQueue* GetCmdQueue() { return m_CmdQueue; }
 
 		void SetMainWindow(Mox::Window* InMainWindow);
 
+
+		// Graphics Passes
+
+		void ImportIncomingRenderUpdates(Mox::FrameRenderUpdates& InOutRenderUpdates);
 
 	private:
 
@@ -48,6 +52,7 @@ namespace Mox {
 
 		void OnFinishRunning();
 
+		void ProcessRenderUpdates();
 
 		// This is "camera" related data
 		// TODO move it on a proper object
@@ -65,6 +70,19 @@ namespace Mox {
 
 		uint64_t m_RenderFrameNumber = 0;
 
+		// Container of render proxies which are currently involved 
+		// in rendering operations by the render thread
+		std::vector<Mox::RenderProxy*> m_ActiveRenderProxies;
+
+
+		/*
+		----- RENDER PARAMETERS UPDATES -----
+		*/
+
+		Mox::FrameRenderUpdates m_RenderUpdatesToProcess;
+
 	};
+
+
 }
 #endif // Renderer_h__

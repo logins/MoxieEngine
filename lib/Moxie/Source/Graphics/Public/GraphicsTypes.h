@@ -12,7 +12,13 @@
 #include <type_traits>
 #include <string>
 #include <vector>
-namespace Mox { 
+
+namespace std {
+enum class byte : unsigned char;
+}
+
+
+namespace Mox {
 
 	class CommandList;
 
@@ -120,20 +126,142 @@ enum class TEXTURE_TYPE : int {
 	TEX_3D
 };
 
+using GPU_V_ADDRESS = uint64_t; // TODO this should depend on graphics API.. as it is valid for D3D12 specifically
+
+/*
+A Resource can either be a buffer or a texture (and their specifications)
+*/
 struct Resource {
-	size_t GetDataSize() const { return m_DataSize; }
-	size_t GetAlignSize() const { return m_AlignmentSize; }
-	virtual ~Resource() = default; // Need to specify virtual to make sure the first destructor to get invoked is the one of the last derived class!
+	uint32_t GetSize() const { return m_DataSize; }
+	uint32_t GetAlignSize() const { return m_AlignmentSize; }
+
+	void* GetData() { return m_Data.data(); }
+	GPU_V_ADDRESS GetGpuData() const { return m_GpuPtr; }
+
+	virtual void Map(void** OutCpuPp) = 0;
+	virtual void UnMap() = 0;
+
+
+	uint32_t GetElementsCount() { return m_ElementsNum; }
+
+
+	virtual void SetCpuData(const void* InData, size_t InSize) = 0;
+	
 protected:
-	Resource() : m_DataSize(0), m_AlignmentSize(0) {};
-	size_t m_DataSize;
-	size_t m_AlignmentSize;
+	std::vector<std::byte> m_Data;
+	GPU_V_ADDRESS m_GpuPtr;
+	uint32_t m_DataSize;
+	uint32_t m_AlignmentSize;
+	uint32_t m_ElementsNum;
+
 };
 
-struct Buffer : public Resource {
+class VertexBuffer
+{
+public:
+	// Note: InSize = _countof(m_VertexData) * sizeof(DataType)
+	VertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize);
+
+	// Note: Now it takes the whole resource, but when placed resources will be implemented, this will change
+	uint32_t GetSize() const { return m_BufferResource.GetSize(); }
+	void* GetData() const { return m_BufferResource.GetData(); }
+	GPU_V_ADDRESS GetGpuData() const { return m_BufferResource.GetGpuData(); }
+	uint32_t GetStride() const { return m_Stride; }
+private:
+	Mox::Resource& m_BufferResource;
+	uint32_t m_Stride;
 };
 
-struct Texture : public Resource {
+class IndexBuffer
+{
+public:
+	// Note: InSize = _countof(m_VertexData) * sizeof(DataType)
+	IndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum);
+	// Note: Now it takes the whole resource, but when placed resources will be implemented, this will change
+	int32_t GetSize() const { return m_BufferResource.GetSize(); }
+	void* GetData() const { return m_BufferResource.GetData(); }
+	GPU_V_ADDRESS GetGpuData() const { return m_BufferResource.GetGpuData(); }
+	int32_t GetElementsNum() const { return m_ElementsNum; }
+private:
+	int32_t m_ElementsNum;
+	Mox::Resource& m_BufferResource;
+};
+
+
+enum class BUFFER_TYPE : int8_t
+{
+	STATIC = 0,
+	// Dynamic buffers will be allocated on circular allocator and a new version will be made every frame
+	// therefore are suited for small content that updates very frequently, such as mvp matrices.
+	DYNAMIC
+};
+
+struct ConstantBufferView;
+
+// It abstracts the concept of constant buffer that we can bind to the render pipeline
+struct Buffer {
+	// Constructor for buffer used as a whole resource
+	Buffer(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource);
+
+	// Constructor for buffer allocating part of the resource
+	Buffer(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize);
+
+	void* GetData() const { return m_CpuPtr; }
+
+	GPU_V_ADDRESS GetGpuPtr() const { return m_GpuPtr; }
+
+	uint32_t GetSize() const { return m_Size; }
+
+	// Enqueues a data change for later be applied by the render thread
+	void SetData(const void* InData, int32_t InSize);
+
+	// To be executed only by the thread that owns the buffer data. In most cases, the render thread.
+	void SetData_RenderThread(const void* InData, int32_t InSize) { memcpy(m_LocalData.data(), InData, InSize); }
+
+	// Move Cpu and Gpu references to specified location and update default view
+
+	void CopyLocalDataToLocation(void* InCpuPtr, GPU_V_ADDRESS InGpuPtr);
+
+	Mox::Resource& GetResource() const { return m_OwningResource; }
+
+	uint32_t GetReferencedResourceSize() const { GetResource().GetSize(); }
+
+	// Returns the default constant buffer view associated with this buffer
+	inline Mox::ConstantBufferView* GetView() { return m_DefaultView; }
+
+protected:
+	Mox::BUFFER_TYPE m_BufferType;
+	// Note: the following is a Sub-Allocation in the resource (most of the times will cover just a portion of a resource)
+	Mox::Resource& m_OwningResource;
+	void* m_CpuPtr;
+	GPU_V_ADDRESS m_GpuPtr;
+	uint32_t m_Size;
+	std::vector<std::byte> m_LocalData;
+
+	Mox::ConstantBufferView* m_DefaultView;
+};
+
+// Stores an update for a constant buffer to be then applied by the render thread
+struct ConstantBufferUpdate
+{
+	ConstantBufferUpdate(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize)
+		: m_Buffer(InBuffer), UpdateData(std::vector<std::byte>(InSize))
+	{
+		memcpy(UpdateData.data(), InData, InSize);
+	}
+	Mox::Buffer& m_Buffer;
+	std::vector<std::byte> UpdateData;
+
+	// Note: This will have to be executed by the render thread
+	inline void ApplyUpdate()
+	{
+		m_Buffer.SetData_RenderThread(UpdateData.data(), UpdateData.size());
+	}
+};
+
+struct Texture {
+
+	Texture(Mox::Resource& InRes) : m_ReferencedResource(InRes) { }
 
 	virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::Buffer& InIntermediateBuffer) = 0;
 	// Allocate empty space on GPU
@@ -148,64 +276,61 @@ struct Texture : public Resource {
 	size_t GetMipLevelsNum() { return m_MipLevelsNum; }
 	size_t GetArraySize() const { return m_ArraySize; }
 
+	Mox::Resource& GetResource() const { return m_ReferencedResource; }
+
 protected:
+	Mox::Resource&	m_ReferencedResource;
 	size_t          m_Width;
 	size_t          m_Height;     // Should be 1 for 1D textures
 	size_t          m_ArraySize;  // For cubemap, this is a multiple of 6
 	size_t          m_MipLevelsNum;
 	BUFFER_FORMAT   m_TexelFormat;
 	TEXTURE_TYPE    m_Type;
-	std::vector<unsigned char> m_Data;
 };
 
-struct DynamicBuffer : public Resource {
-	virtual void SetData(void* InData, size_t InSize, size_t InAlignmentSize) = 0;
-
-	void* GetData() { return m_Data.data(); }
-	// Note: BufferSize indicates the whole container while DataSize only the effective data stored in the buffer 
-	size_t GetBufferSize() const { return m_BufferSize; }
-protected:
-	size_t m_BufferSize;
-	std::vector<unsigned char> m_Data;
-};
-
-enum class RESOURCE_VIEW_TYPE : int {
-	CONSTANT_BUFFER,
-	SHADER_RESOURCE,
-	UNORDERED_ACCESS
-};
-
-struct ResourceView {
-	virtual ~ResourceView() = default; // Need to specify virtual to make sure the first destructor to get invoked is the one of the last derived class!
+struct ResourceView
+{
+	// Views that are not Gpu allocated at the time of getting considered for drawing inside a pass
+	// will be considered dynamic and a gpu descriptor will be allocated for them on the spot
+	virtual bool IsGpuAllocated() = 0;
 };
 
 struct ConstantBufferView : public ResourceView {
-	virtual void ReferenceBuffer(Buffer& InResource, size_t InDataSize, size_t InStrideSize) = 0;
+
+	virtual void ReferenceBuffer(Mox::Buffer& InBuffer) = 0;
+
+	virtual void RebuildResourceReference() = 0;
 protected:
-	ConstantBufferView() = default;
+	ConstantBufferView(Mox::Buffer& InBufffer) : m_ReferencedBuffer(InBufffer) { };
+
+	Mox::Buffer m_ReferencedBuffer;
 };
 
 struct ShaderResourceView : public ResourceView {
 	virtual void InitAsTex2DOrCubemap(Mox::Texture& InTexture) = 0;
 protected:
-	ShaderResourceView() = default;
+	ShaderResourceView(Mox::Resource& InResource) { }
 };
 
 struct UnorderedAccessView : public ResourceView {
-protected:
-	UnorderedAccessView() = default;
+	UnorderedAccessView(Mox::Resource& InReferencedResource) { }
 };
 
-struct VertexBufferView { // size is in bytes
-	virtual void ReferenceResource(Mox::Resource& InResource, size_t DataSize, size_t StrideSize) = 0;
+struct VertexBufferView {
+public:
+	virtual void ReferenceResource(Mox::VertexBuffer& InVB) = 0;
 protected:
-	VertexBufferView() = default;
+	VertexBufferView(Mox::VertexBuffer& InVB) : m_ReferencedVB(InVB) {}
+	Mox::VertexBuffer& m_ReferencedVB;
 };
 
 struct IndexBufferView {
-	virtual void ReferenceResource(Mox::Resource& InResource, size_t InDataSize, BUFFER_FORMAT InFormat) = 0;
+public:
+	virtual void ReferenceResource(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat) = 0;
+	inline Mox::IndexBuffer& GetIB() const { return m_ReferencedIB; }
 protected:
-	IndexBufferView() = default;
+	IndexBufferView(Mox::IndexBuffer& InIB) : m_ReferencedIB(InIB) {}
+	Mox::IndexBuffer& m_ReferencedIB;
 };
 
 enum class SAMPLE_FILTER_TYPE : int {

@@ -12,12 +12,16 @@
 #include <deque>
 #include "d3dx12.h"
 
-namespace Mox { struct D3D12Resource; }
 
 namespace Mox{ 
 
+	struct D3D12Resource;
+	struct Buffer;
+	struct D3D12Buffer;
+
 	/*
 	D3D12LinearBufferAllocator performs constant buffer sub-allocations in a single buffer resource.
+	This will operate in a ring buffer manner similar to what is described here https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D
 	*/
 	class D3D12LinearBufferAllocator {
 
@@ -26,13 +30,16 @@ namespace Mox{
 
 		~D3D12LinearBufferAllocator();
 
-		// It will first align the alignment with the hardware constraints, then align the buffer size and then allocate a buffer inside a resource
-		// At the moment the way to check if the allocation was successful is to check if the CPU pointer field is non-zero
-		void Allocate(size_t InSizeBytes, void*& OutCpuPtr, D3D12_GPU_VIRTUAL_ADDRESS& OutGpuPtr);
+		// Note: We do not need to pass the alignment since it is decided by the hosting resource
+		Mox::Buffer& Allocate(uint32_t InSize);
 
-		// Sets the possible allocation region to a fraction of the whole pool size. Useful when we are allocating for multiple different frames.
-		// If the buffer tries to allocate more than the assigned buffer region, an assert will be called.
-		void SetAdmittedAllocationRegion(float InStartPercentage, float InEndPercentage);
+
+
+		// When frame starts, update the relative offset and copy in all the current active dynamic buffers 
+		void OnFrameStarted();
+
+		// When a frame ends, remove the oldest recorded offset
+		void OnFrameEnded() { m_RelativeFrameOffsetStarts.pop_front(); }
 
 		void Reset();
 
@@ -42,14 +49,28 @@ namespace Mox{
 		D3D12LinearBufferAllocator& operator=(const D3D12LinearBufferAllocator&) = delete;
 
 	private:
+		
+		void AllocateMemoryForBuffer(uint32_t InSizeBytes, void*& OutCpuPtr, D3D12_GPU_VIRTUAL_ADDRESS& OutGpuPtr);
+
+		
+
 		Mox::D3D12Resource& m_Resource;
 
-		size_t m_TakenSize = 0;
 
-		size_t m_AllocationLimit = 0;
+		size_t m_TotalAllocationSize = 0;
+
+		size_t m_CurrentRelativeAllocationOffset = 0;
+
+		// Queue of relative frame offset starts. 
+		// When a new frame starts, an offset is pushed back.
+		// When a new frame ends, an offset is popped from front.
+		// When we allocate circularly for a frame, the current offset needs to always be relatively behind the front() element of this queue.
+		std::deque<size_t> m_RelativeFrameOffsetStarts;
 
 		void* m_ResourceCpuPtr;
 		D3D12_GPU_VIRTUAL_ADDRESS m_ResourceGpuPtr;
+
+		std::vector<Mox::D3D12Buffer> m_AllocatedBuffers;
 	};
 
 

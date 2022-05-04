@@ -13,6 +13,7 @@
 #include <memory> // for std::unique_ptr
 #include "d3d12.h"
 #include "GraphicsAllocator.h"
+#include "D3D12MoxUtils.h"
 
 namespace Mox { 
 
@@ -37,29 +38,31 @@ public:
 	// Note2: We need to declare base destructor as virtual to make the derived class destructor to be executed first
 	virtual ~D3D12GraphicsAllocator() override;
 
-	virtual void Initialize() override;
+	void Initialize() override;
 
-	virtual void OnNewFrameStarted() override;
+	void OnNewFrameStarted() override;
 
-	virtual Mox::Resource& AllocateEmptyResource() override;
+	void OnNewFrameEnded() override;
 
-	virtual Mox::Buffer& AllocateBufferResource(size_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE) override;
+	void OnStartRenderMainView(Mox::CommandList& InCmdList) override;
 
-	virtual Mox::DynamicBuffer& AllocateDynamicBuffer() override;
+	Mox::VertexBuffer& AllocateVertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize) override;
+
+	Mox::IndexBuffer& AllocateIndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum) override;
+
+	virtual Mox::Buffer& AllocateDynamicBuffer(uint32_t InSize) override;
 
 	virtual Mox::Texture& AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum = 0, Mox::RESOURCE_FLAGS InCreationFlags = RESOURCE_FLAGS::NONE) override;
 
 	virtual Mox::Texture& AllocateEmptyTexture(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels) override;
 
-	virtual void AllocateBufferCommittedResource(Mox::CommandList& InCmdList, Mox::Resource& InDestResource, Mox::Resource& InIntermediateResource, size_t InNunElements, size_t InElementSize, const void* InBufferData, Mox::RESOURCE_FLAGS InFlags = Mox::RESOURCE_FLAGS::NONE) override;
+	virtual Mox::Resource& AllocateBufferCommittedResource(Mox::CommandList& InCmdList, const void* InBufferData, uint32_t InSize, Mox::RESOURCE_FLAGS InFlags = Mox::RESOURCE_FLAGS::NONE) override;
 
-	virtual Mox::VertexBufferView& AllocateVertexBufferView() override;
+	virtual Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB) override;
 
-	virtual Mox::IndexBufferView& AllocateIndexBufferView() override;
+	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat) override;
 
 	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource) override;
-
-	virtual Mox::ConstantBufferView& AllocateConstantBufferView() override;
 
 	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) override;
 
@@ -73,18 +76,34 @@ public:
 
 	void ReserveDynamicBufferMemory(size_t InSize, void*& OutCpuPtr, D3D12_GPU_VIRTUAL_ADDRESS& OutGpuPtr);
 
-	D3D12DescriptorHeap& GetCpuHeap();
+	D3D12DescriptorHeap& GetDescriptorsCpuHeap();
 
-	D3D12DescriptorHeap& GetGpuHeap();
+	D3D12DescriptorHeap& GetDescriptorsGpuHeap();
 
 	virtual Mox::Window& AllocateWindow(Mox::WindowInitInput& InWindowInitInput) override;
 
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) override;
 
+	void EnqueueDataChange(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize) override;
+
+	void TransferPendingBufferChanges(std::vector<Mox::ConstantBufferUpdate>& OutBufferUpdates) override;
+
 private:
-	std::deque<std::unique_ptr<Mox::Resource>> m_ResourceArray;
-	std::deque<std::unique_ptr<Mox::VertexBufferView>> m_VertexViewArray;
-	std::deque<std::unique_ptr<Mox::IndexBufferView>> m_IndexViewArray;
+
+	Mox::D3D12Resource& AllocateResourceForBuffer(uint32_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE);
+
+	// TODO move this as a free function in the implementation file, to be of help on every frame when updating the dynamic buffer location and content
+	void StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::Buffer& InDynBuffer, Mox::ConstantBufferView& InResourceView);
+
+	std::deque<Mox::D3D12Resource> m_GraphicsResources;
+
+	std::deque<Mox::VertexBuffer> m_VertexBufferArray;
+	std::deque<Mox::IndexBuffer> m_IndexBufferArray;
+	std::deque<Mox::Buffer> m_BufferArray;
+	std::deque<std::unique_ptr<Mox::Texture>> m_TextureArray;
+
+	std::deque<Mox::D3D12VertexBufferView> m_VertexViewArray;
+	std::deque<Mox::D3D12IndexBufferView> m_IndexViewArray;
 	std::deque<std::unique_ptr<Mox::Shader>> m_ShaderArray;
 	std::deque<std::unique_ptr<Mox::PipelineState>> m_PipelineStateArray;
 	std::deque<std::unique_ptr<Mox::Window>> m_WindowArray;
@@ -93,6 +112,10 @@ private:
 	std::unique_ptr<Mox::D3D12LinearBufferAllocator> m_DynamicBufferAllocator;
 
 	std::unique_ptr<Mox::D3D12DescHeapFactory> m_DescHeapFactory;
+
+	// Changes to be picked up by the render thread
+	std::vector<Mox::ConstantBufferUpdate> m_PendingBufferChanges;
+
 	uint64_t m_FrameCounter = 0;
 };
 	

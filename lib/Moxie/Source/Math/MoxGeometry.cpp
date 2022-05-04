@@ -81,4 +81,53 @@ namespace Mox {
 	// https://stackoverflow.com/questions/115703/storing-c-template-function-definitions-in-a-cpp-file
 	// The downside is that we need to instantiate the template for each type we need.
 
+	Mox::Matrix4f ModelMatrix(const Vector3i& InPosition, const Vector3f& InScale, const Vector3f& InAngleRotation)
+	{
+		// Generate Rotation matrix
+		// Good article about rotation matrix https://www.continuummechanics.org/rotationmatrix.html
+		// and also Wolphram https://mathworld.wolfram.com/EulerAngles.html
+		/*
+		* --- Considering Z to be the axis that points to the top ---
+		psi: angle rotation on the Z-axis
+		theta: angle rotation on Y after psi applied
+		phi: a second rotation on the Z-axis after theta applied
+
+		*/
+		Mox::Vector3f radianRotation = InAngleRotation * EIGEN_PI / 180.f;
+
+		Mox::Vector3f sinAxis(std::sin(radianRotation.x()), std::sin(radianRotation.y()), std::sin(radianRotation.z()));
+		Mox::Vector3f cosAxis(std::cos(radianRotation.x()), std::cos(radianRotation.y()), std::cos(radianRotation.z()));
+		
+		Mox::Matrix3f rotScaleMat; rotScaleMat << cosAxis.x(), -sinAxis.x(), 0.f, sinAxis.x(), cosAxis.x(), 0.f, 0.f, 0.f, 1.f;
+		Mox::Matrix3f rotPartial; rotPartial << cosAxis.y(), 0.f, sinAxis.y(), 0.f, 1.f, 0.f, -sinAxis.y(), 0.f, cosAxis.y();
+
+		rotScaleMat *= rotPartial;
+
+		rotPartial << cosAxis.z(), -sinAxis.z(), 0.f, sinAxis.z(), cosAxis.z(), 0.f, 0.f, 0.f, 1.f;
+
+		rotScaleMat *= rotPartial;
+
+		// Generate and use Scale matrix
+		Mox::Matrix3f scaleMatrix;
+		scaleMatrix <<	
+			InScale.x(), 0.f, 0.f,
+			0.f, InScale.y(), 0.f,
+			0.f, 0.f, InScale.z();
+
+		rotScaleMat *= scaleMatrix;
+
+		// Generate Translation matrix
+		Mox::Matrix4f outMat;
+		outMat <<
+			0.f, 0.f, 0.f, InPosition.x(),
+			0.f, 0.f, 0.f, InPosition.y(),
+			0.f, 0.f, 0.f, InPosition.z(),
+			0.f, 0.f, 0.f, 1.f;
+		
+		// Copy rotScale into the top-left 3x3 block
+		outMat.block<3, 3>(0, 0) = rotScaleMat;
+
+		return std::move(outMat);
+	}
+
 }

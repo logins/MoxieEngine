@@ -25,6 +25,7 @@ namespace Mox {
 		class SimulatonThread;
 		class RenderThread;
 		class Entity;
+		struct EntityCreationInfo;
 
 	/*!
 	 * \class Application
@@ -83,7 +84,7 @@ namespace Mox {
 
 		// Scene Related
 
-		Mox::Entity& AddEntity();
+		Mox::Entity& AddEntity(const Mox::EntityCreationInfo& InInfo);
 
 		// Render related
 

@@ -9,6 +9,7 @@
 #include "D3D12Window.h"
 #include "MoxUtils.h"
 #include "D3D12UtilsInternal.h"
+#include "CommandList.h"
 
 namespace Mox
 {
@@ -26,19 +27,15 @@ namespace Mox
 		m_VSyncEnabled = InInitParams.VSyncEnabled;
 		UpdatePresentFlags();
 
-		m_BackBuffers.reserve(m_DefaultBufferCount);
-		for(int i=0; i < m_DefaultBufferCount; i++)
-			m_BackBuffers.push_back(std::make_unique<Mox::D3D12Resource>(nullptr));
-
 		RegisterWindowClass(InHInstance, InInitParams.WindowClassName, InInitParams.WndProc);
 
 		CreateHWND(InInitParams.WindowClassName, InHInstance, InInitParams.WindowTitle, InInitParams.WinWidth, InInitParams.WinHeight);
 
+		m_RTVDescriptorHeap = Mox::CreateDescriptorHeap(m_CurrentDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_DefaultBufferCount);
+
 		CreateSwapChain(m_CmdQueue.GetD3D12CmdQueue(), InInitParams.BufWidth, InInitParams.BufHeight);
 
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
-
-		m_RTVDescriptorHeap = Mox::CreateDescriptorHeap(m_CurrentDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_DefaultBufferCount);
 
 		// Create Descriptor Heap for the DepthStencil View
 		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {}; // Note: DepthStencil View requires storage in a heap even if we are going to use only 1 view
@@ -48,7 +45,7 @@ namespace Mox
 		dsvHeapDesc.NodeMask = 0;
 		Mox::ThrowIfFailed(m_CurrentDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_DSVHeap)));
 
-		UpdateRenderTargetViews();
+		UpdateBufferResourcesAndViews();
 
 		UpdateDepthStencil();
 	}
@@ -70,19 +67,16 @@ namespace Mox
 		m_VSyncEnabled = InWindowInitInput.vSyncEnabled;
 		UpdatePresentFlags();
 
-		m_BackBuffers.reserve(m_DefaultBufferCount);
-		for (int i = 0; i < m_DefaultBufferCount; i++)
-			m_BackBuffers.push_back(std::make_unique<Mox::D3D12Resource>(nullptr));
 
 		RegisterWindowClass(InHInstance, InWindowInitInput.WindowClassName, nullptr);
 
 		CreateHWND(InWindowInitInput.WindowClassName, InHInstance, InWindowInitInput.WindowTitle, InWindowInitInput.WinWidth, InWindowInitInput.WinHeight);
 
+		m_RTVDescriptorHeap = Mox::CreateDescriptorHeap(m_CurrentDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_DefaultBufferCount);
+
 		CreateSwapChain(m_CmdQueue.GetD3D12CmdQueue(), InWindowInitInput.BufWidth, InWindowInitInput.BufHeight);
 
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
-
-		m_RTVDescriptorHeap = Mox::CreateDescriptorHeap(m_CurrentDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_DefaultBufferCount);
 
 		// Create Descriptor Heap for the DepthStencil View
 		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {}; // Note: DepthStencil View requires storage in a heap even if we are going to use only 1 view
@@ -92,7 +86,7 @@ namespace Mox
 		dsvHeapDesc.NodeMask = 0;
 		Mox::ThrowIfFailed(m_CurrentDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_DSVHeap)));
 
-		UpdateRenderTargetViews();
+		UpdateBufferResourcesAndViews();
 
 		UpdateDepthStencil();
 	}
@@ -131,12 +125,12 @@ namespace Mox
 
 	ComPtr<ID3D12Resource> D3D12Window::GetCurrentBackbuffer()
 	{
-		return static_cast<Mox::D3D12Resource*>(m_BackBuffers[m_CurrentBackBufferIndex].get())->GetInner();
+		return m_BackBuffers[m_CurrentBackBufferIndex].GetInner();
 	}
 
 	ComPtr<ID3D12Resource> D3D12Window::GetBackbufferAtIndex(uint32_t InIdx)
 	{
-		return InIdx < m_DefaultBufferCount ? static_cast<Mox::D3D12Resource*>(m_BackBuffers[InIdx].get())->GetInner() : nullptr;
+		return InIdx < m_DefaultBufferCount ? m_BackBuffers[InIdx].GetInner() : nullptr;
 	}
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE D3D12Window::GetCurrentRTVDescHandle()
@@ -216,7 +210,7 @@ namespace Mox
 		// All the backbuffers references must be released before resizing the swapchain
 		for (int32_t i = 0; i < m_DefaultBufferCount; i++)
 		{
-			static_cast<Mox::D3D12Resource*>(m_BackBuffers[i].get())->GetInner().Reset();
+			m_BackBuffers[i].GetInner().Reset();
 			m_FrameFenceValues[i] = m_FrameFenceValues[m_CurrentBackBufferIndex];
 		}
 
@@ -225,7 +219,7 @@ namespace Mox
 		ThrowIfFailed(m_SwapChain->GetDesc(&swapchain_desc)); // Maintain previous swapchain settings after resizing
 		ThrowIfFailed(m_SwapChain->ResizeBuffers(m_DefaultBufferCount, m_FrameWidth, M_FrameHeight, swapchain_desc.BufferDesc.Format, swapchain_desc.Flags));
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
-		UpdateRenderTargetViews();
+		UpdateBufferResourcesAndViews();
 
 		UpdateDepthStencil();
 
@@ -243,6 +237,26 @@ namespace Mox
 	{
 		CurrentDsvDescHandle = Mox::D3D12CpuDescriptorHandle(CD3DX12_CPU_DESCRIPTOR_HANDLE(GetCuttentDSVDescHandle()));
 		return CurrentDsvDescHandle;
+	}
+
+	void D3D12Window::ClearRtAndDs(Mox::CommandList& InCmdList)
+{
+		// Transitioning current backbuffer resource to render target state
+		// We can be sure that the previous state was present because in this application all the render targets
+		// are first filled and then presented to the main window repetitevely.
+		InCmdList.ResourceBarrier(m_BackBuffers[m_CurrentBackBufferIndex], RESOURCE_STATE::PRESENT, RESOURCE_STATE::RENDER_TARGET);
+
+		float clearColor[] = { .4f, .6f, .9f, 1.f };
+		InCmdList.ClearRTV(GetCurrentRTVDescriptorHandle(), clearColor);
+
+		// Note: Clearing Render Target and Depth Stencil is a good practice, but in this case is also essential.
+		// Without clearing the DepthStencilView, the rasterizer would not be able to use it!!
+		InCmdList.ClearDepth(GetCurrentDSVDescriptorHandle());
+	}
+
+	Mox::Resource& D3D12Window::GetCurrentBackBuffer()
+	{
+		return m_BackBuffers[m_CurrentBackBufferIndex] ;
 	}
 
 	void D3D12Window::CreateHWND(const wchar_t* InWindowClassName, HINSTANCE InHInstance, const wchar_t* InWindowTitle, uint32_t width, uint32_t height)
@@ -324,6 +338,22 @@ namespace Mox
 		// Cast to swapchain 4 and assign to member variable
 		ThrowIfFailed(swapChain1.As(&m_SwapChain));
 
+		// The SwapChain will automatically allocate all the necessary back buffers, so we can now retrieve them
+		m_BackBuffers.reserve(m_DefaultBufferCount);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHeapHandle(m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		Microsoft::WRL::ComPtr<ID3D12Resource> tempBB;
+		for (int bufferIdx = 0; bufferIdx < m_DefaultBufferCount; bufferIdx++)
+		{
+			// Retrieve interface to the current backBuffer
+			ThrowIfFailed(m_SwapChain->GetBuffer(bufferIdx, IID_PPV_ARGS(&tempBB)));
+
+			m_CurrentDevice->CreateRenderTargetView(tempBB.Get(), nullptr, rtvDescHeapHandle);
+
+			m_BackBuffers.emplace_back(tempBB, Mox::D3D12_RES_TYPE::BackBuffer);
+
+			rtvDescHeapHandle.Offset(m_RTVDescIncrementSize); // Shift rtvDescHandle pointer to the next element in desc heap
+		}
+
 	}
 
 	void D3D12Window::UpdateDepthStencil()
@@ -343,7 +373,7 @@ namespace Mox
 		Mox::CreateDepthStencilView(m_CurrentDevice, m_DSBuffer.Get(), m_DSVHeap->GetCPUDescriptorHandleForHeapStart());
 	}
 
-	void D3D12Window::UpdateRenderTargetViews()
+	void D3D12Window::UpdateBufferResourcesAndViews()
 	{
 		//Getting a descriptor handle to iterate trough the descriptor heap elements
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHeapHandle(m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -356,7 +386,7 @@ namespace Mox
 			// Either the pointer to the resource or the resource descriptor must be provided to create the view.
 			m_CurrentDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvDescHeapHandle);
 
-			static_cast<Mox::D3D12Resource*>(m_BackBuffers[bufferIdx].get())->SetInner(backBuffer);
+			m_BackBuffers[bufferIdx].SetInner(backBuffer);
 
 			// Move the CPU descriptor handle to the next element on the heap
 			rtvDescHeapHandle.Offset(m_RTVDescIncrementSize);

@@ -8,11 +8,9 @@ cmake_minimum_required(VERSION 3.17)
 # by git submodules, and then use CMake to build, install and link them to our code.
 
 set(CMAKE_COMMAND "cmake")
-set(CMAKE_GENERATOR "\"Visual Studio 16 2019\"") # TODO retrieve this automatically
+set(CMAKE_GENERATOR "\"Visual Studio 17 2022\"") # TODO retrieve this automatically
 set(CMAKE_BUILD_FOLDER_NAME "_builds")
 set(CMAKE_BUILD_CONFIG "Debug") # Note: the configuration must be in line with the targets we are linking them against (e.g. Debug for Moxie Debug)
-set(INSTALLED_FOLDER_NAME "installed")
-set(INSTALLED_LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${INSTALLED_FOLDER_NAME})
 
 function(build_install_lib EXTERNAL_LIB_NAME ADDITIONAL_CMD_OPTIONS)
     # Generate CMake cache

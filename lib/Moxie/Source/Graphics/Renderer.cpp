@@ -13,6 +13,7 @@
 #include "Graphics/Public/Device.h"
 #include "Graphics/Public/CommandList.h"
 #include "CpuProfiling.h"
+#include "Features/Public/RenderPass.h"
 
 namespace Mox {
 
@@ -31,6 +32,15 @@ RenderThread::RenderThread()
 
 	// Create Command Queue
 	m_CmdQueue = &Mox::GraphicsAllocator::Get()->AllocateCommandQueue(m_GraphicsDevice, Mox::COMMAND_LIST_TYPE::COMMAND_LIST_TYPE_DIRECT);
+
+	// ----- Setup Render Passes -----
+	for (const std::unique_ptr<Mox::RenderPass>& pass : GetRenderPasses())
+	{
+		pass->SetupPass();
+	}
+
+
+
 }
 
 void RenderThread::Run()
@@ -44,21 +54,10 @@ void RenderThread::RenderMainView()
 
 	Mox::CommandList& cmdList = m_CmdQueue->GetAvailableCommandList();
 
+	Mox::GraphicsAllocator::Get()->OnStartRenderMainView(cmdList);
+
 	// Clear render target and depth stencil
-	{
-		// Transitioning current backbuffer resource to render target state
-		// We can be sure that the previous state was present because in this application all the render targets
-		// are first filled and then presented to the main window repetitevely.
-		cmdList.ResourceBarrier(backBuffer, RESOURCE_STATE::PRESENT, RESOURCE_STATE::RENDER_TARGET);
-
-		float clearColor[] = { .4f, .6f, .9f, 1.f };
-		cmdList.ClearRTV(m_MainWindow->GetCurrentRTVDescriptorHandle(), clearColor);
-
-		// Note: Clearing Render Target and Depth Stencil is a good practice, but in this case is also essential.
-		// Without clearing the DepthStencilView, the rasterizer would not be able to use it!!
-		cmdList.ClearDepth(m_MainWindow->GetCurrentDSVDescriptorHandle());
-	}
-
+	m_MainWindow->ClearRtAndDs(cmdList);
 	ContextView& mainView = m_ContextViews.front();
 
 	// Set Viewport, Scissor Rect from the main view and back buffer from the window swapchain
@@ -71,7 +70,11 @@ void RenderThread::RenderMainView()
 		cmdList.SetRenderTargetFromWindow(*m_MainWindow);
 	}
 
-	Application::Get()->RenderMainView(cmdList, mainView); // Derived classes will call this to render their application content
+	// ----- Send Draw Commands -----
+	for (const std::unique_ptr<Mox::RenderPass>& pass : Mox::GetRenderPasses())
+	{
+		pass->SendDrawCommands(cmdList);
+	}
 
 	// Execute command list and present current render target from the main window
 	{
@@ -129,6 +132,10 @@ void RenderThread::OnRenderFrameStarted()
 	// Trigger all the begin CPU frame mechanics
 	m_CmdQueue->OnRenderFrameStarted();
 
+
+	// Update the live proxies with the given parameters
+	ProcessRenderUpdates();
+
 	Mox::GraphicsAllocator::Get()->OnNewFrameStarted();
 
 }
@@ -136,6 +143,8 @@ void RenderThread::OnRenderFrameStarted()
 void RenderThread::OnRenderFrameFinished()
 {
 	m_CmdQueue->OnRenderFrameFinished();
+
+	Mox::GraphicsAllocator::Get()->OnNewFrameEnded();
 
 	m_RenderFrameNumber++;
 }
@@ -148,6 +157,18 @@ void RenderThread::SetMainWindow(Mox::Window* InMainWindow)
 
 }
 
+void RenderThread::ImportIncomingRenderUpdates(Mox::FrameRenderUpdates& InOutRenderUpdates)
+{
+	for(auto renderUpdate : InOutRenderUpdates.m_ConstantUpdates)
+	{
+		m_RenderUpdatesToProcess.m_ConstantUpdates.push_back(renderUpdate);
+	}
+	m_RenderUpdatesToProcess.m_NewProxies = InOutRenderUpdates.m_NewProxies;
+	//m_RenderUpdatesToProcess = std::move(InOutRenderUpdates);
+
+	InOutRenderUpdates = Mox::FrameRenderUpdates();
+}
+
 void RenderThread::OnFinishRunning()
 {
 	// Finish all the render commands currently in flight
@@ -155,6 +176,30 @@ void RenderThread::OnFinishRunning()
 
 	// Release all the allocated graphics resources
 	m_GraphicsAllocator.reset();
+}
+
+void RenderThread::ProcessRenderUpdates()
+{
+	// Handling new render proxies
+	for (Mox::RenderProxy* newProxy : m_RenderUpdatesToProcess.m_NewProxies)
+	{
+		// Make every pass aware of the new proxies to be able to create relative draw commands
+		for (const std::unique_ptr<Mox::RenderPass>& pass : Mox::GetRenderPasses())
+		{
+			pass->ProcessRenderProxy(*newProxy);
+		}
+
+		m_ActiveRenderProxies.push_back(newProxy);
+	}
+
+	// Update constant buffer values
+	for (ConstantBufferUpdate& constUpdate : m_RenderUpdatesToProcess.m_ConstantUpdates)
+	{
+		constUpdate.ApplyUpdate();
+	}
+
+
+	m_RenderUpdatesToProcess = Mox::FrameRenderUpdates();
 }
 
 }

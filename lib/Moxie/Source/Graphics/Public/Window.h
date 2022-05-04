@@ -52,7 +52,9 @@ namespace Mox {
 		virtual bool IsVSyncEnabled() const = 0;
 		virtual void SetVSyncEnabled(bool InNowEnabled) = 0;
 
-		Mox::Resource& GetCurrentBackBuffer() { return *m_BackBuffers[m_CurrentBackBufferIndex]; }
+		virtual void ClearRtAndDs(Mox::CommandList& InCmdList) = 0;
+
+		virtual Mox::Resource& GetCurrentBackBuffer() = 0;
 
 		Mox::MulticastDelegate<> OnPaintDelegate;
 		Mox::MulticastDelegate<> OnCreateDelegate;
@@ -76,8 +78,6 @@ namespace Mox {
 		static const uint32_t m_DefaultBufferCount = Mox::Constants::g_MaxConcurrentFramesNum;
 
 		uint32_t m_CurrentBackBufferIndex = 0;
-
-		std::vector<std::unique_ptr<Mox::Resource>> m_BackBuffers;
 
 		bool m_IsMouseLeftHold = false, m_IsMouseRightHold = false;
 

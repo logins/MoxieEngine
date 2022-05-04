@@ -59,9 +59,7 @@ namespace Mox {
 
 		virtual void SetGraphicsRootTable(uint32_t InRootIndex, Mox::ConstantBufferView& InView) override;
 
-		virtual void StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::DynamicBuffer& InDynBuffer, Mox::ConstantBufferView& InResourceView) override;
-
-
+	
 		virtual void UploadBufferData(Mox::Buffer& DestinationBuffer, Mox::Buffer& IntermediateBuffer, const void* InBufferData, size_t InDataSize) override;
 
 
@@ -71,6 +69,8 @@ namespace Mox {
 
 		virtual void ReferenceSRV(uint32_t InRootIdx, Mox::ShaderResourceView& InSRV) override;
 
+		virtual void ReferenceCBV(uint32_t InRootIdx, Mox::ConstantBufferView& InCBV) override;
+
 		virtual void ReferenceComputeTable(uint32_t InRootIdx, Mox::ShaderResourceView& InUav) override;
 
 		virtual void ReferenceComputeTable(uint32_t InRootIdx, Mox::UnorderedAccessView& InUav) override;
@@ -79,6 +79,12 @@ namespace Mox {
 		void SetGraphicsRootDescriptorTable(uint32_t InRootIdx, D3D12_GPU_DESCRIPTOR_HANDLE InGpuDescHandle);
 
 		CD3DX12_GPU_DESCRIPTOR_HANDLE CopyDynamicDescriptorsToBoundHeap(uint32_t InTablesNum, D3D12_CPU_DESCRIPTOR_HANDLE* InDescHandleArray, uint32_t* InRageSizeArray);
+
+
+		void StageDynamicCbv(uint32_t InRootIndex, Mox::ConstantBufferView& InCbv) override;
+
+
+		void CommitStagedViews() override;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> m_D3D12CmdList;

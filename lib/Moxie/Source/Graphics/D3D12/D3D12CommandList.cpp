@@ -65,7 +65,7 @@ namespace Mox {
 			m_D3D12CmdList->SetComputeRootSignature(d3d12PSO.GetInnerRootSignature().Get());
 
 		// Bind descriptor heap(s)
-		m_D3D12CmdList->SetDescriptorHeaps(1, static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetGpuHeap().GetInner().GetAddressOf());
+		m_D3D12CmdList->SetDescriptorHeaps(1, static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsGpuHeap().GetInner().GetAddressOf());
 
 	}
 
@@ -101,8 +101,6 @@ namespace Mox {
 
 	void D3D12CommandList::DrawIndexed(uint64_t InIndexCountPerInstance)
 	{
-		// Note: this will upload descriptors relative to descriptor tables on GPU and then reference them in the pipeline!
-		m_StagedDescriptorManager.CommitStagedDescriptorsForDraw(*this);
 
 		// Now that the descriptors are in GPU we can reference the relative views in the pipeline
 		m_D3D12CmdList->DrawIndexedInstanced(InIndexCountPerInstance, 1, 0, 0, 0);
@@ -120,25 +118,6 @@ namespace Mox {
 		m_D3D12CmdList->SetGraphicsRootDescriptorTable(InRootIndex, static_cast<Mox::D3D12ConstantBufferView&>(InView).m_GpuAllocatedRange->m_FirstGpuHandle);
 	}
 
-
-	void D3D12CommandList::StoreAndReferenceDynamicBuffer(uint32_t InRootIndex, Mox::DynamicBuffer& InDynBuffer, Mox::ConstantBufferView& InResourceView)
-	{
-		// Create space for current Dynamic Buffer value
-		void* cpuPtr; D3D12_GPU_VIRTUAL_ADDRESS gpuPtr;
-		static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->ReserveDynamicBufferMemory(InDynBuffer.GetBufferSize(), cpuPtr, gpuPtr);
-
-		// Copy buffer content in the allocation
-		memcpy(cpuPtr, InDynBuffer.GetData(), InDynBuffer.GetDataSize());
-
-		// Reference it in the view object
-		static_cast<Mox::D3D12ConstantBufferView&>(InResourceView).ReferenceBuffer(gpuPtr, InDynBuffer.GetBufferSize());
-
-		// Stage View's descriptor for GPU heap insertion
-		Mox::D3D12ConstantBufferView& bufferView = static_cast<Mox::D3D12ConstantBufferView&>(InResourceView);
-			
-		m_StagedDescriptorManager.StageDynamicDescriptors(InRootIndex, bufferView.GetCPUDescHandle(), bufferView.GetRangeSize());
-	}
-
 	void D3D12CommandList::UploadBufferData(Mox::Buffer& DestinationBuffer, Mox::Buffer& IntermediateBuffer, const void* InBufferData, size_t InDataSize)
 	{
 		// Now that both copy and dest resource are created on CPU, we can use them to update the corresponding GPU SubResource
@@ -149,7 +128,7 @@ namespace Mox {
 
 		// Note: UpdateSubresources first uploads data in the intermediate resource, which is expected to be in shared memory (upload heap) 
 		// and then transfers the content to the destination resource, most of the time in upload heap
-		::UpdateSubresources(m_D3D12CmdList.Get(), static_cast<Mox::D3D12Resource&>(DestinationBuffer).GetInner().Get(), static_cast<Mox::D3D12Resource&>(IntermediateBuffer).GetInner().Get(), 0, 0, 1, &subresourceData);
+		::UpdateSubresources(m_D3D12CmdList.Get(), static_cast<Mox::D3D12Resource&>(DestinationBuffer.GetResource()).GetInner().Get(), static_cast<Mox::D3D12Resource&>(IntermediateBuffer.GetResource()).GetInner().Get(), 0, 0, 1, &subresourceData);
 
 	}
 
@@ -157,14 +136,14 @@ namespace Mox {
 	{
 		Mox::D3D12ShaderResourceView& d3d12SRV = static_cast<Mox::D3D12ShaderResourceView&>(InSRV);
 
-		d3d12SRV.m_GpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetGpuHeap().AllocateStaticRange(1, d3d12SRV.GetCPUDescHandle()); // Note: we are assuming SRV too always reference a range of 1 descriptors
+		d3d12SRV.m_GpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsGpuHeap().AllocateStaticRange(1, d3d12SRV.GetCPUDescHandle()); // Note: we are assuming SRV too always reference a range of 1 descriptors
 	}
 
 	void D3D12CommandList::UploadUavToGpu(Mox::UnorderedAccessView& InUav)
 	{
 		Mox::D3D12UnorderedAccessView& d3d12Uav = static_cast<Mox::D3D12UnorderedAccessView&>(InUav);
 
-		d3d12Uav.m_GpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetGpuHeap().AllocateStaticRange(1, d3d12Uav.GetCPUDescHandle()); // Note: we are assuming Uav too always reference a range of 1 descriptors
+		d3d12Uav.m_GpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsGpuHeap().AllocateStaticRange(1, d3d12Uav.GetCPUDescHandle()); // Note: we are assuming Uav too always reference a range of 1 descriptors
 	}
 
 	void D3D12CommandList::ReferenceSRV(uint32_t InRootIdx, Mox::ShaderResourceView& InSRV)
@@ -172,6 +151,13 @@ namespace Mox {
 		// TODO this will work for graphics command list only, it would also need to work for compute... so we would need to know the type of operation we are executing...
 
 		m_D3D12CmdList->SetGraphicsRootDescriptorTable(InRootIdx, static_cast<Mox::D3D12ShaderResourceView&>(InSRV).GetGPUDescHandle());
+	}
+
+	void D3D12CommandList::ReferenceCBV(uint32_t InRootIdx, Mox::ConstantBufferView& InCBV)
+	{
+		// TODO this is the same operation done in ReferenceSRV .. would it be worth to merge them as ReferenceResource(..) function?
+
+		m_D3D12CmdList->SetGraphicsRootDescriptorTable(InRootIdx, static_cast<Mox::D3D12ConstantBufferView&>(InCBV).GetGpuDescHandle());
 	}
 
 	void D3D12CommandList::ReferenceComputeTable(uint32_t InRootIdx, Mox::UnorderedAccessView& InUav)
@@ -188,7 +174,18 @@ namespace Mox {
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE D3D12CommandList::CopyDynamicDescriptorsToBoundHeap(uint32_t InRangesNum, D3D12_CPU_DESCRIPTOR_HANDLE* InDescHandleArray, uint32_t* InRageSizeArray)
 	{
-		return static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetGpuHeap().CopyDynamicDescriptors(InRangesNum, InDescHandleArray, InRageSizeArray);
+		return static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsGpuHeap().CopyDynamicDescriptors(InRangesNum, InDescHandleArray, InRageSizeArray);
+	}
+
+	void D3D12CommandList::StageDynamicCbv(uint32_t InRootIndex, Mox::ConstantBufferView& InCbv)
+	{
+		m_StagedDescriptorManager.StageDynamicDescriptors(InRootIndex, static_cast<Mox::D3D12ConstantBufferView&>(InCbv).GetCPUDescHandle(), 1); // TODO At the moment range size hardcoded to 1
+	}
+
+	void D3D12CommandList::CommitStagedViews()
+	{
+		// Note: this will upload descriptors relative to descriptor tables on GPU and then reference them in the pipeline!
+		m_StagedDescriptorManager.CommitStagedDescriptorsForDraw(*this);
 	}
 
 	void D3D12CommandList::D3D12StagedDescriptorManager::StageDynamicDescriptors(uint32_t InRootParamIndex, D3D12_CPU_DESCRIPTOR_HANDLE InFirstCpuDescHandle, uint32_t InRangeSize)

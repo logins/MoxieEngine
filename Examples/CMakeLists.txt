@@ -14,3 +14,4 @@ add_subdirectory(Textures)
 
 add_subdirectory(Threads)
 
+add_subdirectory(EnTT)

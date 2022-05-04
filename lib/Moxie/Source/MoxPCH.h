@@ -15,6 +15,7 @@
 #include <queue>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <list>
 #include <wrl.h>
@@ -35,3 +36,4 @@
 #include <mutex>
 
 #include "Delegate.h"
+#include "GraphicsUtils.h"

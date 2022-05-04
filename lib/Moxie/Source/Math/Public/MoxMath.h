@@ -23,7 +23,19 @@
 // and a proper library wrapper would also add an indirection cost up to 10% of the speed, other than
 // the time spent on realizing it.
 
+
+
 namespace Mox {
+
+	using Matrix4f = Eigen::Matrix4f;
+
+	using Matrix3f = Eigen::Matrix3f;
+
+	using Vector3f = Eigen::Vector3f;
+
+	using Vector2f = Eigen::Vector2f;
+
+	using Vector3i = Eigen::Vector3i;
 
 		template<typename DataType, int RowsNum, int ColsNum>
 		using Matrix = typename Eigen::Matrix<DataType, RowsNum, ColsNum>;
@@ -33,11 +45,7 @@ namespace Mox {
 		template<typename DataType, int Dim>
 		using AffineTransform = typename Eigen::Transform<DataType, Dim, Eigen::Affine>;
 
-		using Matrix4f = Eigen::Matrix4f;
-
-		using Vector3f = Eigen::Vector3f;
-
-		using Vector2f = Eigen::Vector2f;
+		
 
 		// Note: InAlignmentUnit must be a power of two!
 		// Aligns the input size to the input alignment unit.

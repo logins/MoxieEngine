@@ -46,6 +46,12 @@ namespace Mox {
 
 		virtual void SetGraphicsRootTable(uint32_t InRootIndex, Mox::ConstantBufferView& InView) = 0;
 
+		// Records the given Cbv at the specified root index for Gpu upload upon calling CommitStagedDescriptors()
+		virtual void StageDynamicCbv(uint32_t InRootIndex, Mox::ConstantBufferView& InCbv) = 0;
+
+		// Uploads the staged descriptors to Gpu. This is usually done before a draw command using such descriptors.
+		virtual void CommitStagedViews() = 0;
+
 		virtual void DrawIndexed(uint64_t InIndexCountPerInstance) = 0;
 
 		virtual void Dispatch(uint32_t InGroupsNumX, uint32_t InGroupsNumY, uint32_t InGroupsNumZ) = 0;
@@ -54,9 +60,9 @@ namespace Mox {
 
 		virtual void UploadUavToGpu(Mox::UnorderedAccessView& InUav) = 0;
 
-		virtual void StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::DynamicBuffer& InDynBuffer, Mox::ConstantBufferView& InResourceView) = 0;
-
 		virtual void ReferenceSRV(uint32_t InRootIdx, Mox::ShaderResourceView& InSRV) = 0;
+
+		virtual void ReferenceCBV(uint32_t InRootIdx, Mox::ConstantBufferView& InCBV) = 0;
 
 		virtual void ReferenceComputeTable(uint32_t InRootIdx, Mox::ShaderResourceView& InUav) = 0;
 

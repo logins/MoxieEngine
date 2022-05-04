@@ -17,10 +17,12 @@ namespace Mox {
 	class Device;
 	class CommandList;
 	class Window;
-	class WindowInitInput;
+	struct WindowInitInput;
 	class CommandQueue;
 
 // This pure virtual class serves as interface for any Graphics Allocator we want to implement.
+// A graphics allocator is meant to handle the lifetime of graphics resources (buffers, textures and descriptors) 
+// and having a direct communication with GPU memory.
 // In Application code we are going to use GraphicsAllocator with a factory pattern class, so we can call GraphicsAllocator::Get()
 // to retrieve the real allocator (in our case a D3D12GraphicsAllocator object).
 // Using this pattern is better compared to a singleton, because we are then able to extend the graphics allocator class
@@ -37,9 +39,15 @@ public:
 
 	virtual void OnNewFrameStarted() = 0;
 
-	virtual Mox::Resource& AllocateEmptyResource() = 0;
+	virtual void OnNewFrameEnded() = 0;
 
-	virtual Mox::DynamicBuffer& AllocateDynamicBuffer() = 0;
+	virtual void OnStartRenderMainView(Mox::CommandList& InCmdList) = 0;
+
+	virtual Mox::VertexBuffer& AllocateVertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize) = 0;
+
+	virtual Mox::IndexBuffer& AllocateIndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum) = 0;
+
+	virtual Mox::Buffer& AllocateDynamicBuffer(uint32_t InSize) = 0;
 
 	virtual Mox::Texture& AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum = 0, Mox::RESOURCE_FLAGS InCreationFlags = RESOURCE_FLAGS::NONE) = 0;
 	
@@ -49,15 +57,11 @@ public:
 	// First creates an intermediary buffer in shared memory (upload heap), then the same buffer in reserved memory (default heap)
 	// and then calls UpdateSubresources that will copy the content of the first buffer in the second one.
 	// The type of allocation is Committed Resource, meaning that a resource heap will be created specifically to contain the allocated resource each time.
-	virtual void AllocateBufferCommittedResource(Mox::CommandList& InCmdList, Mox::Resource& InDestResource, Mox::Resource& InIntermediateResource,
-		size_t InNunElements, size_t InElementSize, const void* InBufferData, Mox::RESOURCE_FLAGS InFlags = Mox::RESOURCE_FLAGS::NONE) = 0;
+	virtual Mox::Resource& AllocateBufferCommittedResource(Mox::CommandList& InCmdList, const void* InBufferData, uint32_t InSize, Mox::RESOURCE_FLAGS InFlags = Mox::RESOURCE_FLAGS::NONE) = 0;
 
-	virtual Mox::Buffer& AllocateBufferResource(size_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE) = 0;
-
-	virtual Mox::VertexBufferView& AllocateVertexBufferView() = 0;
-	virtual Mox::IndexBufferView& AllocateIndexBufferView() = 0;
+	virtual Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB) = 0;
+	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat) = 0;
 	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource) = 0;
-	virtual Mox::ConstantBufferView& AllocateConstantBufferView() = 0;
 
 	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) = 0;
 	// SRV referencing a Tex2D Array
@@ -72,6 +76,11 @@ public:
 	virtual Mox::Window& AllocateWindow(Mox::WindowInitInput& InWindowInitInput) = 0;
 
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) = 0;
+
+
+	virtual void EnqueueDataChange(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize) = 0;
+
+	virtual void TransferPendingBufferChanges(std::vector<Mox::ConstantBufferUpdate>& OutBufferUpdates) = 0;
 
 	// Deleting copy constructor, assignment operator, move constructor and move assignment
 	GraphicsAllocatorBase(const GraphicsAllocatorBase&) = delete;

@@ -10,7 +10,8 @@
 #define Simulatior_h__
 
 #include "Async.h"
-#include "Entity.h"
+#include "MoxEntity.h"
+#include "MoxRenderProxy.h"
 
 namespace Mox {
 
@@ -20,6 +21,7 @@ namespace Mox {
 	class Device;
 	class GraphicsAllocatorBase;
 	class Window;
+	struct FrameRenderUpdates;
 
 	/* SimulatonThread is the system that handles all the application simulation, e.g. gameplay, 
 	* and to update the properties of objects in the scene.
@@ -38,10 +40,13 @@ namespace Mox {
 
 		void OnFinishRunning();
 
-		Mox::Entity& AddEntity();
+		Mox::Entity& CreateEntity(const Mox::EntityCreationInfo& InInfo);
 
 		uint64_t GetCpuFrameNumber() { return m_SimulationFrameNumber; }
 
+		// Called from Application to transfer object parameters changes to the Render thread
+
+		Mox::FrameRenderUpdates m_CurrentFrameRenderUpdates;
 
 	private:
 
@@ -53,7 +58,9 @@ namespace Mox {
 
 		std::vector<Mox::Entity> m_WorldEntities;
 
+
 		uint64_t m_SimulationFrameNumber = 1;
+
 
 	};
 

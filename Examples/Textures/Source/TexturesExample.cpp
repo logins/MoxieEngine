@@ -17,7 +17,7 @@
 #include "Window.h"
 #include "Device.h"
 #include "CommandList.h"
-#include "Entity.h"
+#include "MoxEntity.h"
 #include "Simulator.h"
 #include "Renderer.h"
 

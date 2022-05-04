@@ -102,7 +102,7 @@ namespace Mox {
 	private:
 
 		// The desc heap factory owns view objects since views are stored in desc heaps
-		std::deque<std::unique_ptr<Mox::ResourceView>> m_ResourceViewArray;
+		std::vector<std::unique_ptr<Mox::ResourceView>> m_ResourceViewArray;
 
 		// TODO delete copy construct and assignment op
 		std::unique_ptr<D3D12DescriptorHeap> m_CPUDescHeap;

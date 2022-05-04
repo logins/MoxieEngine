@@ -30,6 +30,8 @@ namespace Mox {
 		KEY_ESC
 	};
 
+
+
 #define Q(x) L#x
 #define LQUOTE(x) Q(x)
 
@@ -40,6 +42,8 @@ namespace Mox {
 #define Check(X) if(DEBUG_TEST && !(X)) __debugbreak();
 
 #define PrintD3dErrorBlob(X) std::cout << "Error Message: " << std::string((char*)(X->GetBufferPointer()),X->GetBufferSize()) << std::endl;
+
+
 
 }
 

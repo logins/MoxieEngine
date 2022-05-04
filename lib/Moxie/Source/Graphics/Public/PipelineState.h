@@ -28,7 +28,7 @@ public:
 	struct INPUT_LAYOUT_DESC {
 		struct LayoutElement {
 			std::string m_Name;
-			BUFFER_FORMAT m_Format;
+			Mox::BUFFER_FORMAT m_Format;
 		};
 		std::vector<LayoutElement> LayoutElements;
 	};

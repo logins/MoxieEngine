@@ -151,9 +151,9 @@ namespace Mox
 		return m_PaintStarted;
 	}
 
-	Mox::Entity& Application::AddEntity()
+	Mox::Entity& Application::AddEntity(const Mox::EntityCreationInfo& InInfo)
 	{
-		return m_Simulator->AddEntity();
+		return m_Simulator->CreateEntity(InInfo);
 	}
 
 	void Application::OnQuitApplication()
@@ -187,6 +187,13 @@ namespace Mox
 	
 		// Syncing data from Renderer to Application
 		m_RenderFrameTime = m_Renderer->GetCurrentFrameTime();
+
+		// The render thread retrieves and process the render updates to the render proxies
+		// 
+		// TODO find a better way to move updates from the simulation to the render thread
+
+		m_Renderer->ImportIncomingRenderUpdates(m_Simulator->m_CurrentFrameRenderUpdates);
+
 
 		return true;
 	}

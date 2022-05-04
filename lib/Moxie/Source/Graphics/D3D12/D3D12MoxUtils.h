@@ -17,6 +17,7 @@
 #include <d3dx12.h>
 #include "GraphicsTypes.h"
 #include "D3D12DescHeapFactory.h"
+#include "MoxUtils.h"
 
 #ifdef max
 #undef max // This is needed to avoid conflicts with functions called max(), like chrono::milliseconds::max()
@@ -105,42 +106,59 @@ namespace Mox {
 		CD3DX12_GPU_DESCRIPTOR_HANDLE m_DescHandle;
 	};
 
-	struct D3D12Resource : public Mox::Buffer {
-		D3D12Resource() : m_D3D12Resource(nullptr) {}; // Allow empty D3D12Resource for cases like DummyBuffer
-		D3D12Resource& operator=(const D3D12Resource& InObjToCopy) = default;
-		D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InResource)
-			: m_D3D12Resource(InResource)
-		{
-			if (InResource)
-			{
-				auto resourceDesc = m_D3D12Resource->GetDesc();
-				m_AlignmentSize = resourceDesc.Alignment;
-				m_DataSize = resourceDesc.Width * resourceDesc.Height;
-			}
-		}
-		Microsoft::WRL::ComPtr<ID3D12Resource>& GetInner() { return m_D3D12Resource; }
-		void SetInner(Microsoft::WRL::ComPtr<ID3D12Resource> InResource) { m_D3D12Resource = InResource; }
-		uint64_t GetSizeInBytes() const { return m_DataSize; }
-		void Map(void** OutCpuPp) { m_D3D12Resource->Map(0, nullptr, OutCpuPp); }
-		void UnMap() { m_D3D12Resource->Unmap(0, nullptr); }
-	private:
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_D3D12Resource;
-
+	enum class D3D12_RES_TYPE : uint8_t
+	{
+		Buffer,
+		BackBuffer
 	};
 
-	struct D3D12DynamicBuffer : public Mox::DynamicBuffer {
+	struct D3D12Resource : public Mox::Resource {
+		// Constructor for when the resource is already allocated (like backbuffers from the window swapchain)
+		D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType = D3D12_RES_TYPE::Buffer);
 
-		virtual void SetData(void* InData, size_t InSize, size_t InAlignmentSize) override;
+		// This constructor will be very expensive! It creates a buffer resource in upload heap and orders a copy to a second new resource in default heap
+		// TODO it will need changing
+		D3D12Resource(Mox::CommandList& InCmdList, const void* InBufferData, size_t InSize, Mox::RESOURCE_FLAGS InFlags);
 
+		Microsoft::WRL::ComPtr<ID3D12Resource>& GetInner() { return m_D3D12Resource; }
+		void SetInner(Microsoft::WRL::ComPtr<ID3D12Resource> InResource) { m_D3D12Resource = InResource; }
+		uint32_t GetSizeInBytes() const { return m_DataSize; }
+		void Map(void** OutCpuPp) { m_D3D12Resource->Map(0, nullptr, OutCpuPp); }
+		void UnMap() { m_D3D12Resource->Unmap(0, nullptr); }
+
+		// Note: The Size will be aligned with D3D12 buffer constraints
+		virtual void SetCpuData(const void* InData, size_t InSize);
+
+		// Prevent copy construct or copy assignment
+		D3D12Resource& operator=(const D3D12Resource& InObjToCopy) = delete;
+		// Note: since we are using D3D12Resource in std::vector around engine code, this class needs to be copy-constructible!
+		//D3D12Resource(const D3D12Resource& InObjToCopy) = delete;
+	private:
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_D3D12Resource;
+		// TODO delete this once we implement placed resources!!
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_IntermediateResource;
+	};
+
+	struct D3D12Buffer : public Mox::Buffer {
+		// Constructor for static buffer covering the whole resource
+		D3D12Buffer(Mox::Resource& InResource)
+			: Mox::Buffer(Mox::BUFFER_TYPE::STATIC, InResource)
+		{
+			// We need to have the size as a multiple of the alignment
+			Check(GetSize() % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
+		}
+		// Constructor for dynamic buffer
+		D3D12Buffer(Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize)
+			: Mox::Buffer(Mox::BUFFER_TYPE::DYNAMIC, InResource, InCpuPtr, InGpuPtr, InSize)
+		{
+			
+		}
+		
 	};
 
 	struct D3D12Texture : public Mox::Texture {
-		D3D12Texture() = default; // Allow empty D3D12Texture for cases like DummyTexture
 
-		D3D12Texture(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels);
-
-		// Constructor to load the texture from file. It will not upload it to GPU so that has to be done manually after creating the texture.
-		D3D12Texture(const wchar_t* InResourcePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum, Mox::RESOURCE_FLAGS InCreationFlags);
+		D3D12Texture(Mox::Resource& InRes) : Mox::Texture(InRes) { }
 
 		virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::Buffer& InIntermediateBuffer) override;
 
@@ -160,28 +178,36 @@ namespace Mox {
 
 	struct D3D12ConstantBufferView : public Mox::ConstantBufferView
 	{
-		D3D12ConstantBufferView() = default;
+		D3D12ConstantBufferView() = delete;
 
 		D3D12ConstantBufferView(Mox::Buffer& InResource);
 				
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescHandle() { return m_CpuAllocatedRange->m_FirstCpuHandle; }
 
+		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuDescHandle() { return m_GpuAllocatedRange->m_FirstGpuHandle; }
+
 		uint32_t GetRangeSize() { return m_CpuAllocatedRange->m_RangeSize; }
 
-		void ReferenceBuffer(D3D12_GPU_VIRTUAL_ADDRESS InBufferGPUAddress, size_t InBufferSize);
+		virtual void ReferenceBuffer(Mox::Buffer& InResource) override;
 
-		virtual void ReferenceBuffer(Mox::Buffer& InResource, size_t InDataSize, size_t InStrideSize) override;
+		void RebuildResourceReference() override;
+
+		bool IsGpuAllocated() override { return m_GpuAllocatedRange != nullptr; }
 
 		// Descriptor range referenced by this View object.
 		// Note: The StaticDescAllocation destructor will declared the relative descriptors to be stale and they will be cleared at the end of the frame
 		std::unique_ptr<Mox::StaticDescAllocation> m_CpuAllocatedRange;
 		
+		// This gpu descriptor will be used by non-dynamic buffers
+		// since it will not change over time
 		std::unique_ptr<Mox::StaticDescAllocation> m_GpuAllocatedRange;
+
+
 	};
 
 	struct D3D12ShaderResourceView : public Mox::ShaderResourceView
 	{
-		D3D12ShaderResourceView() = default;
+		D3D12ShaderResourceView() = delete;
 
 		D3D12ShaderResourceView(Mox::Texture& InTextureToReference);
 
@@ -193,26 +219,28 @@ namespace Mox {
 
 		virtual void InitAsTex2DOrCubemap(Mox::Texture& InTexture);
 
+		void RebuildResourceReference() { /** TODO do we really need this? */ };
+
 		// Descriptor range referenced by this View object.
 		// Note: The Allocated Desc Range destructor will declared the relative descriptors to be stale and they will be cleared at the end of the frame
 		// Refers to a CPU desc heap that is used to stage descriptors
 		std::unique_ptr<Mox::StaticDescAllocation> m_CpuAllocatedRange;
 		// Refers to the shader visible descriptor in the desc heap used by command lists
 		std::unique_ptr<Mox::StaticDescAllocation> m_GpuAllocatedRange;
+
+		bool IsGpuAllocated() override;
+
 	};
 
 	struct D3D12UnorderedAccessView : public Mox::UnorderedAccessView
 	{
-		D3D12UnorderedAccessView() = default;
-
-		D3D12UnorderedAccessView(Mox::Texture& InTextureToReference);
-
-		void InitAsTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMipSlice, uint32_t InFirstArraySlice, uint32_t InPlaneSlice);
+		D3D12UnorderedAccessView(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMipSlice, uint32_t InFirstArraySlice, uint32_t InPlaneSlice);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescHandle() { return m_CpuAllocatedRange->m_FirstCpuHandle; }
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescHandle() { return m_GpuAllocatedRange->m_FirstGpuHandle; }
 
+		void RebuildResourceReference() { /** TODO do we really need this? */ };
 
 		// Descriptor range referenced by this View object.
 		// Note: The Allocated Desc Range destructor will declared the relative descriptors to be stale and they will be cleared at the end of the frame
@@ -220,15 +248,25 @@ namespace Mox {
 		std::unique_ptr<Mox::StaticDescAllocation> m_CpuAllocatedRange;
 		// Refers to the shader visible descriptor in the desc heap used by command lists
 		std::unique_ptr<Mox::StaticDescAllocation> m_GpuAllocatedRange;
+
+		bool IsGpuAllocated() override;
+
 	};
 
 	struct D3D12VertexBufferView : public Mox::VertexBufferView {
-		virtual void ReferenceResource(Mox::Resource& InResource, size_t DataSize, size_t StrideSize);
+		D3D12VertexBufferView(Mox::VertexBuffer& InVB) : Mox::VertexBufferView(InVB) { ReferenceResource(InVB); }
+		virtual void ReferenceResource(Mox::VertexBuffer& InVB);
+
 		D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
+
 	};
 
 	struct D3D12IndexBufferView : public Mox::IndexBufferView {
-		virtual void ReferenceResource(Mox::Resource& InResource, size_t InDataSize, Mox::BUFFER_FORMAT InFormat);
+		D3D12IndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat)
+			: Mox::IndexBufferView(InIB) 
+		{ ReferenceResource(InIB, InFormat); }
+		virtual void ReferenceResource(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat);
+
 		D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 	};
 

@@ -14,7 +14,7 @@
 
 namespace Mox {
 
-	// Data about a view on a 3D scene and how to render it within a window
+	// Data about a view on a 3D world and how to render it within a window
 	struct ContextView
 	{
 		ContextView(){}

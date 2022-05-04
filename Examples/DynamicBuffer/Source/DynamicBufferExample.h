@@ -36,13 +36,13 @@ private:
 	void OnControlKeyPressed(Mox::KEYBOARD_KEY InPressedKey);
 
 	// Vertex buffer for the cube
-	Mox::Resource* m_VertexBuffer;
+	Mox::VertexBuffer* m_VertexBuffer;
 	Mox::VertexBufferView* m_VertexBufferView;
 	// Index buffer for the cube
-	Mox::Resource* m_IndexBuffer;
+	Mox::IndexBuffer* m_IndexBuffer;
 	Mox::IndexBufferView* m_IndexBufferView;
 	// Standalone Constant Buffer for the color modifier
-	Mox::DynamicBuffer* m_ColorModBuffer;
+	Mox::Buffer* m_ColorModBuffer;
 	Mox::ConstantBufferView* m_ColorModBufferView;
 
 	Mox::PipelineState* m_PipelineState;

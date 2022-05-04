@@ -23,22 +23,22 @@ namespace Mox {
 		return Mox::EnableDebugLayer_Internal();
 	}
 
-	Mox::DynamicBuffer& AllocateDynamicBuffer()
-	{
-		return GraphicsAllocator::Get()->AllocateDynamicBuffer();
-	}
-
-	Mox::VertexBufferView& AllocateVertexBufferView()
+	Mox::Buffer& AllocateDynamicBuffer(size_t InSize)
 {
-		return GraphicsAllocator::Get()->AllocateVertexBufferView();
+		return GraphicsAllocator::Get()->AllocateDynamicBuffer(InSize);
 	}
 
-	Mox::IndexBufferView& AllocateIndexBufferView()
+	Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB)
 {
-		return GraphicsAllocator::Get()->AllocateIndexBufferView();
+		return GraphicsAllocator::Get()->AllocateVertexBufferView(InVB);
 	}
 
-	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource, Mox::RESOURCE_VIEW_TYPE InType)
+	Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat)
+{
+		return GraphicsAllocator::Get()->AllocateIndexBufferView(InIB, InFormat);
+	}
+
+	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource)
 {
 		return GraphicsAllocator::Get()->AllocateConstantBufferView(InResource);
 	}

@@ -60,6 +60,9 @@ namespace Mox {
 
 	void SimulatonThread::OnCpuFrameFinished()
 	{
+		// Pick up changes to transfer to the render thread
+		Mox::GraphicsAllocator::Get()->TransferPendingBufferChanges(m_CurrentFrameRenderUpdates.m_ConstantUpdates);
+
 		m_SimulationFrameNumber++;
 	}
 
@@ -68,10 +71,18 @@ namespace Mox {
 
 	}
 
-	Mox::Entity& SimulatonThread::AddEntity()
-	{
-		return m_WorldEntities.emplace_back();
-	}
+	Mox::Entity& SimulatonThread::CreateEntity(const Mox::EntityCreationInfo& InInfo)
+{
+		Mox::Entity& newEntity = m_WorldEntities.emplace_back(InInfo);
 
+		// In case the new entity has a render proxy, and so something to render, 
+		// the information will be enqueued to be delivered to the render thread. 
+		if (newEntity.GetRenderProxy())
+		{
+			m_CurrentFrameRenderUpdates.m_NewProxies.push_back(m_WorldEntities.back().GetRenderProxy());
+		}
+
+		return m_WorldEntities.back();
+	}
 
 }

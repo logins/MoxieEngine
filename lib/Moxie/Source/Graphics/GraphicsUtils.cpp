@@ -12,18 +12,50 @@
 #include "D3D12MoxUtils.h"
 #endif
 #include "GraphicsAllocator.h"
-#include "Public/PipelineState.h"
+#include "PipelineState.h"
+#include "MoxMesh.h"
 
 namespace Mox { 
 
-#ifdef GRAPHICS_SDK_D3D12
+	Mox::FrameRenderUpdates& GetSimThreadUpdatesForRenderer()
+	{
+		static Mox::FrameRenderUpdates g_SimThreadUpdatesForRenderer;
+
+		return g_SimThreadUpdatesForRenderer;
+	}
+
+
+	void RequestResourceForBuffer(Buffer& InBuffer)
+	{
+		GetSimThreadUpdatesForRenderer().m_BufferResourceRequests.emplace_back(InBuffer, InBuffer.GetType(), InBuffer.GetSize());
+	}
+
+	void ReleaseResourceForBuffer(Buffer& InBuffer)
+	{
+		// TODO
+	}
+
+	void RequestRenderProxyForEntity(Entity& InEntity, const std::vector<struct MeshCreationInfo>& InInfo)
+	{
+		GetSimThreadUpdatesForRenderer().m_ProxyRequests.emplace_back(InEntity, InInfo);
+	}
+
+	void ReleaseRenderProxyForEntity(Entity& InEntity)
+	{
+		// TODO
+	}
+
+	void UpdateConstantBufferValue(Buffer& InBuffer, const void* InData, uint32_t InSize)
+	{
+		GetSimThreadUpdatesForRenderer().m_ConstantUpdates.emplace_back(InBuffer, InData, InSize);
+	}
 
 	void EnableDebugLayer()
 	{
 		return Mox::EnableDebugLayer_Internal();
 	}
 
-	Mox::Buffer& AllocateDynamicBuffer(size_t InSize)
+	Mox::BufferResource& AllocateDynamicBuffer(size_t InSize)
 {
 		return GraphicsAllocator::Get()->AllocateDynamicBuffer(InSize);
 	}
@@ -38,7 +70,7 @@ namespace Mox {
 		return GraphicsAllocator::Get()->AllocateIndexBufferView(InIB, InFormat);
 	}
 
-	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource)
+	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource)
 {
 		return GraphicsAllocator::Get()->AllocateConstantBufferView(InResource);
 	}
@@ -64,6 +96,10 @@ namespace Mox {
 	}
 
 
-#endif
+	RenderProxyRequest::RenderProxyRequest(Mox::Entity& InEntity, const std::vector<struct MeshCreationInfo>& InMeshInfo) 
+		: m_TargetEntity(&InEntity), m_MeshInfos(InMeshInfo)
+	{
+
+	}
 
 }

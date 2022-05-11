@@ -14,6 +14,7 @@
 #include "Graphics/Public/CommandList.h"
 #include "CpuProfiling.h"
 #include "Features/Public/RenderPass.h"
+#include "MoxMesh.h"
 
 namespace Mox {
 
@@ -159,12 +160,7 @@ void RenderThread::SetMainWindow(Mox::Window* InMainWindow)
 
 void RenderThread::ImportIncomingRenderUpdates(Mox::FrameRenderUpdates& InOutRenderUpdates)
 {
-	for(auto renderUpdate : InOutRenderUpdates.m_ConstantUpdates)
-	{
-		m_RenderUpdatesToProcess.m_ConstantUpdates.push_back(renderUpdate);
-	}
-	m_RenderUpdatesToProcess.m_NewProxies = InOutRenderUpdates.m_NewProxies;
-	//m_RenderUpdatesToProcess = std::move(InOutRenderUpdates);
+	m_RenderUpdatesToProcess = InOutRenderUpdates;//std::move(InOutRenderUpdates);
 
 	InOutRenderUpdates = Mox::FrameRenderUpdates();
 }
@@ -180,8 +176,18 @@ void RenderThread::OnFinishRunning()
 
 void RenderThread::ProcessRenderUpdates()
 {
+	// Create buffer resources
+	for (const Mox::BufferResourceRequest& resourceRequest : m_RenderUpdatesToProcess.m_BufferResourceRequests)
+	{
+		GraphicsAllocator::Get()->AllocateResourceForBuffer(resourceRequest);
+
+	}
+
+	// Create proxies
+	std::vector<Mox::RenderProxy*> newProxies = GraphicsAllocator::Get()->CreateProxies(m_RenderUpdatesToProcess.m_ProxyRequests);
+
 	// Handling new render proxies
-	for (Mox::RenderProxy* newProxy : m_RenderUpdatesToProcess.m_NewProxies)
+	for (Mox::RenderProxy* newProxy : newProxies)
 	{
 		// Make every pass aware of the new proxies to be able to create relative draw commands
 		for (const std::unique_ptr<Mox::RenderPass>& pass : Mox::GetRenderPasses())

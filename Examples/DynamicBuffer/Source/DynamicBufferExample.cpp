@@ -54,8 +54,6 @@ void DynBufExampleApp::OnInitializeContent()
 	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(loadContentCmdList, m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
 	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(loadContentCmdList, m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
 	m_ColorModBuffer = &Mox::AllocateDynamicBuffer(sizeof(float));
-	m_VertexBufferView = &Mox::AllocateVertexBufferView(*m_VertexBuffer);
-	m_IndexBufferView = &Mox::AllocateIndexBufferView(*m_IndexBuffer, Mox::BUFFER_FORMAT::R16_UINT); // Single channel 16 bits, because WORD = unsigned short = 2 bytes = 16 bits
 	m_ColorModBufferView = &Mox::GraphicsAllocator::Get()->AllocateConstantBufferView(*m_ColorModBuffer);
 	m_PipelineState = &Mox::AllocatePipelineState();
 
@@ -123,10 +121,38 @@ void DynBufExampleApp::OnInitializeContent()
 	m_Renderer->GetCmdQueue()->Flush(); // TODO renderer should not need to be exposed to the derived application
 
 	// Create a mesh and assign it to a new world entity
-	static Mox::Mesh cubeMesh(Mox::Vector3i(0, 0, 0), Mox::Vector3f(0, 0, 0), *m_VertexBufferView, *m_IndexBufferView);
 
 
-	m_CubeEntity = &AddEntity({ Mox::Vector3i(0,0,0), {&cubeMesh} });
+	std::vector<std::tuple<Mox::SpHash, Mox::Buffer*>> meshShaderParamDefinitions;
+
+	// Creating the buffer for the model matrix
+	Mox::Matrix4f modelMatrix = Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0));
+	Mox::Buffer* mvpBuffer = new Mox::Buffer(Mox::BUFFER_TYPE::DYNAMIC, sizeof(modelMatrix));
+
+	const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
+	const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
+	const Eigen::Vector3f upDirection = Eigen::Vector3f(0, 1, 0);
+	Mox::Matrix4f viewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
+	// z_min z_max aspect_ratio fov
+	Mox::Matrix4f projMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, 0.7853981634f);
+
+	Mox::Matrix4f mvpValue = projMatrix * viewMatrix * modelMatrix;
+
+	mvpBuffer->SetData(mvpValue.data(), sizeof(mvpValue));
+
+	// Setting the relative shader parameter
+	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("mvp"), mvpBuffer);
+
+	// Creating buffer for the color mod
+	Mox::Buffer* colorModBuffer = new Mox::Buffer(Mox::BUFFER_TYPE::DYNAMIC, sizeof(float));
+	float colorMod = .5f;
+	colorModBuffer->SetData(&colorMod, sizeof(float));
+	// Setting the relative shader parameter
+	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("c_mod"), colorModBuffer);
+
+	std::vector<Mox::MeshCreationInfo> meshCreationInfo{ {m_VertexBuffer, m_IndexBuffer, meshShaderParamDefinitions} };
+
+	m_CubeEntity = &AddEntity({ Mox::Vector3i(0,0,0), meshCreationInfo });
 
 	// Window events delegates
 	m_MainWindow->OnMouseMoveDelegate.Add<DynBufExampleApp, &DynBufExampleApp::OnMouseMove>(this);

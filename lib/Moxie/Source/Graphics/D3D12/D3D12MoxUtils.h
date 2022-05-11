@@ -139,17 +139,17 @@ namespace Mox {
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_IntermediateResource;
 	};
 
-	struct D3D12Buffer : public Mox::Buffer {
+	struct D3D12BufferResource : public Mox::BufferResource {
 		// Constructor for static buffer covering the whole resource
-		D3D12Buffer(Mox::Resource& InResource)
-			: Mox::Buffer(Mox::BUFFER_TYPE::STATIC, InResource)
+		D3D12BufferResource(Mox::Resource& InResource)
+			: Mox::BufferResource(Mox::BUFFER_TYPE::STATIC, InResource)
 		{
 			// We need to have the size as a multiple of the alignment
 			Check(GetSize() % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
 		}
 		// Constructor for dynamic buffer
-		D3D12Buffer(Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize)
-			: Mox::Buffer(Mox::BUFFER_TYPE::DYNAMIC, InResource, InCpuPtr, InGpuPtr, InSize)
+		D3D12BufferResource(Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize)
+			: Mox::BufferResource(Mox::BUFFER_TYPE::DYNAMIC, InResource, InCpuPtr, InGpuPtr, InSize)
 		{
 			
 		}
@@ -160,7 +160,7 @@ namespace Mox {
 
 		D3D12Texture(Mox::Resource& InRes) : Mox::Texture(InRes) { }
 
-		virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::Buffer& InIntermediateBuffer) override;
+		virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::BufferResource& InIntermediateBuffer) override;
 
 		virtual void InstantiateOnGPU() override;
 
@@ -180,7 +180,7 @@ namespace Mox {
 	{
 		D3D12ConstantBufferView() = delete;
 
-		D3D12ConstantBufferView(Mox::Buffer& InResource);
+		D3D12ConstantBufferView(Mox::BufferResource& InResource);
 				
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescHandle() { return m_CpuAllocatedRange->m_FirstCpuHandle; }
 
@@ -188,7 +188,7 @@ namespace Mox {
 
 		uint32_t GetRangeSize() { return m_CpuAllocatedRange->m_RangeSize; }
 
-		virtual void ReferenceBuffer(Mox::Buffer& InResource) override;
+		virtual void ReferenceBuffer(Mox::BufferResource& InResource) override;
 
 		void RebuildResourceReference() override;
 

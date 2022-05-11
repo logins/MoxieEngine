@@ -15,17 +15,17 @@ namespace Mox {
 	VertexBuffer::VertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize)
 		: m_Stride(InStride), m_BufferResource(Mox::GraphicsAllocator::Get()->AllocateBufferCommittedResource(InCmdList, InData, InSize))
 	{
-
+		m_DefaultView = &Mox::AllocateVertexBufferView(*this);
 	}
 
 	IndexBuffer::IndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum)
 		: m_BufferResource(Mox::GraphicsAllocator::Get()->AllocateBufferCommittedResource(InCmdList, InData, InSize)),
 		m_ElementsNum(InElementsNum)
 	{
-
+		m_DefaultView = &Mox::AllocateIndexBufferView(*this, Mox::BUFFER_FORMAT::R16_UINT); // Single channel 16 bits, because WORD = unsigned short = 2 bytes = 16 bits
 	}
 
-	Buffer::Buffer(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource) 
+	BufferResource::BufferResource(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource) 
 		: m_OwningResource(InResource), m_Size(InResource.GetSize()), m_BufferType(InBufType), m_CpuPtr(InResource.GetData()), 
 		m_GpuPtr(InResource.GetGpuData())
 	{
@@ -33,19 +33,20 @@ namespace Mox {
 		m_DefaultView = &Mox::GraphicsAllocator::Get()->AllocateConstantBufferView(*this);
 	}
 
-	Buffer::Buffer(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize) 
+	BufferResource::BufferResource(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize) 
 		: m_OwningResource(InResource), m_Size(InSize), m_BufferType(InBufType), m_CpuPtr(InCpuPtr), m_GpuPtr(InGpuPtr)
 	{
 		m_LocalData.resize(m_Size);
 		m_DefaultView = &Mox::GraphicsAllocator::Get()->AllocateConstantBufferView(*this);
 	}
 
-	void Buffer::SetData(const void* InData, int32_t InSize)
+	void BufferResource::SetData(const void* InData, int32_t InSize)
 	{
-		GraphicsAllocator::Get()->EnqueueDataChange(*this, InData, InSize);
+		memcpy(m_LocalData.data(), InData, InSize);
 	}
 
-	void Buffer::CopyLocalDataToLocation(void* InCpuPtr, GPU_V_ADDRESS InGpuPtr)
+
+	void BufferResource::CopyLocalDataToLocation(void* InCpuPtr, GPU_V_ADDRESS InGpuPtr)
 	{
 		m_CpuPtr = InCpuPtr; m_GpuPtr = InGpuPtr;
 
@@ -72,6 +73,23 @@ namespace Mox {
 		memcpy(InCpuPtr, m_LocalData.data(), m_LocalData.size());
 
 		m_DefaultView->RebuildResourceReference();
+	}
+
+	Buffer::Buffer(Mox::BUFFER_TYPE InType, uint32_t InSize)
+		: m_BufferType(InType), m_Size(InSize)
+	{
+		Mox::RequestResourceForBuffer(*this);
+	}
+
+	Buffer::~Buffer()
+	{
+		Mox::ReleaseResourceForBuffer(*this);
+	}
+
+
+	void Buffer::SetData(const void* InData, uint32_t InSize)
+	{
+		Mox::UpdateConstantBufferValue(*this, InData, InSize);
 	}
 
 }

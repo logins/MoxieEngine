@@ -23,6 +23,7 @@ namespace Mox {
 	class Window;
 	struct WindowInitInput;
 	class CommandQueue;
+	class Mesh;
 
 class D3D12GraphicsAllocator : public Mox::GraphicsAllocatorBase
 {
@@ -50,7 +51,7 @@ public:
 
 	Mox::IndexBuffer& AllocateIndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum) override;
 
-	virtual Mox::Buffer& AllocateDynamicBuffer(uint32_t InSize) override;
+	virtual Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) override;
 
 	virtual Mox::Texture& AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum = 0, Mox::RESOURCE_FLAGS InCreationFlags = RESOURCE_FLAGS::NONE) override;
 
@@ -62,7 +63,7 @@ public:
 
 	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat) override;
 
-	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource) override;
+	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource) override;
 
 	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) override;
 
@@ -84,23 +85,31 @@ public:
 
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) override;
 
-	void EnqueueDataChange(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize) override;
 
-	void TransferPendingBufferChanges(std::vector<Mox::ConstantBufferUpdate>& OutBufferUpdates) override;
+
+
+
+	std::vector<Mox::RenderProxy*> CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) override;
+
+
+	void AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest) override;
 
 private:
 
 	Mox::D3D12Resource& AllocateResourceForBuffer(uint32_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE);
 
 	// TODO move this as a free function in the implementation file, to be of help on every frame when updating the dynamic buffer location and content
-	void StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::Buffer& InDynBuffer, Mox::ConstantBufferView& InResourceView);
+	void StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::BufferResource& InDynBuffer, Mox::ConstantBufferView& InResourceView);
 
 	std::deque<Mox::D3D12Resource> m_GraphicsResources;
 
 	std::deque<Mox::VertexBuffer> m_VertexBufferArray;
 	std::deque<Mox::IndexBuffer> m_IndexBufferArray;
-	std::deque<Mox::Buffer> m_BufferArray;
+	std::deque<Mox::BufferResource> m_BufferArray;
 	std::deque<std::unique_ptr<Mox::Texture>> m_TextureArray;
+
+	std::deque<std::unique_ptr<Mox::Mesh>> m_MeshArray;
+	std::deque<std::unique_ptr<Mox::RenderProxy>> m_RenderProxyArray;
 
 	std::deque<Mox::D3D12VertexBufferView> m_VertexViewArray;
 	std::deque<Mox::D3D12IndexBufferView> m_IndexViewArray;
@@ -114,7 +123,7 @@ private:
 	std::unique_ptr<Mox::D3D12DescHeapFactory> m_DescHeapFactory;
 
 	// Changes to be picked up by the render thread
-	std::vector<Mox::ConstantBufferUpdate> m_PendingBufferChanges;
+
 
 	uint64_t m_FrameCounter = 0;
 };

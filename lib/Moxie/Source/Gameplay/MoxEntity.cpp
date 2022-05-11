@@ -14,8 +14,8 @@ namespace Mox {
 
 
 Entity::Entity(const Mox::EntityCreationInfo& InInfo)
-	: m_WorldPos(InInfo.WorldPosition), m_RenderProxy(new Mox::RenderProxy(InInfo.Meshes)) // TODO replace with a proxy allocator
 {
+	Mox::RequestRenderProxyForEntity(*this, InInfo.m_MeshCreationInfo);
 }
 
 

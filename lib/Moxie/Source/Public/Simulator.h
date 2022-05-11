@@ -46,7 +46,7 @@ namespace Mox {
 
 		// Called from Application to transfer object parameters changes to the Render thread
 
-		Mox::FrameRenderUpdates m_CurrentFrameRenderUpdates;
+
 
 	private:
 

@@ -19,6 +19,7 @@ namespace Mox {
 	class Window;
 	struct WindowInitInput;
 	class CommandQueue;
+	class RenderProxy;
 
 // This pure virtual class serves as interface for any Graphics Allocator we want to implement.
 // A graphics allocator is meant to handle the lifetime of graphics resources (buffers, textures and descriptors) 
@@ -47,11 +48,15 @@ public:
 
 	virtual Mox::IndexBuffer& AllocateIndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum) = 0;
 
-	virtual Mox::Buffer& AllocateDynamicBuffer(uint32_t InSize) = 0;
+	virtual Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) = 0;
 
 	virtual Mox::Texture& AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum = 0, Mox::RESOURCE_FLAGS InCreationFlags = RESOURCE_FLAGS::NONE) = 0;
 	
 	virtual Mox::Texture& AllocateEmptyTexture(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels) = 0;
+
+	virtual std::vector<RenderProxy*> CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) = 0;
+
+	virtual void AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest) = 0;
 
 	// Preferable for Static Buffers such as Vertex and Index Buffers.
 	// First creates an intermediary buffer in shared memory (upload heap), then the same buffer in reserved memory (default heap)
@@ -61,7 +66,7 @@ public:
 
 	virtual Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB) = 0;
 	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat) = 0;
-	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource) = 0;
+	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource) = 0;
 
 	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) = 0;
 	// SRV referencing a Tex2D Array
@@ -78,9 +83,9 @@ public:
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) = 0;
 
 
-	virtual void EnqueueDataChange(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize) = 0;
 
-	virtual void TransferPendingBufferChanges(std::vector<Mox::ConstantBufferUpdate>& OutBufferUpdates) = 0;
+
+
 
 	// Deleting copy constructor, assignment operator, move constructor and move assignment
 	GraphicsAllocatorBase(const GraphicsAllocatorBase&) = delete;

@@ -156,6 +156,9 @@ protected:
 
 };
 
+struct VertexBufferView;
+struct IndexBufferView;
+
 class VertexBuffer
 {
 public:
@@ -167,9 +170,13 @@ public:
 	void* GetData() const { return m_BufferResource.GetData(); }
 	GPU_V_ADDRESS GetGpuData() const { return m_BufferResource.GetGpuData(); }
 	uint32_t GetStride() const { return m_Stride; }
+	Mox::VertexBufferView* GetView() const { return m_DefaultView; }
+	void SetView(Mox::VertexBufferView* InView) { m_DefaultView = InView; }
 private:
 	Mox::Resource& m_BufferResource;
 	uint32_t m_Stride;
+
+	Mox::VertexBufferView* m_DefaultView;
 };
 
 class IndexBuffer
@@ -182,9 +189,13 @@ public:
 	void* GetData() const { return m_BufferResource.GetData(); }
 	GPU_V_ADDRESS GetGpuData() const { return m_BufferResource.GetGpuData(); }
 	int32_t GetElementsNum() const { return m_ElementsNum; }
+	Mox::IndexBufferView* GetView() const { return m_DefaultView; }
+	void SetView(Mox::IndexBufferView* InView) { m_DefaultView = InView; }
 private:
 	int32_t m_ElementsNum;
 	Mox::Resource& m_BufferResource;
+
+	Mox::IndexBufferView* m_DefaultView;
 };
 
 
@@ -198,13 +209,14 @@ enum class BUFFER_TYPE : int8_t
 
 struct ConstantBufferView;
 
-// It abstracts the concept of constant buffer that we can bind to the render pipeline
-struct Buffer {
+
+// Graphics buffer resource meant to be owned by the render thread.
+struct BufferResource {
 	// Constructor for buffer used as a whole resource
-	Buffer(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource);
+	BufferResource(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource);
 
 	// Constructor for buffer allocating part of the resource
-	Buffer(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize);
+	BufferResource(Mox::BUFFER_TYPE InBufType, Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize);
 
 	void* GetData() const { return m_CpuPtr; }
 
@@ -213,10 +225,9 @@ struct Buffer {
 	uint32_t GetSize() const { return m_Size; }
 
 	// Enqueues a data change for later be applied by the render thread
-	void SetData(const void* InData, int32_t InSize);
 
 	// To be executed only by the thread that owns the buffer data. In most cases, the render thread.
-	void SetData_RenderThread(const void* InData, int32_t InSize) { memcpy(m_LocalData.data(), InData, InSize); }
+	void SetData(const void* InData, int32_t InSize);
 
 	// Move Cpu and Gpu references to specified location and update default view
 
@@ -239,31 +250,50 @@ protected:
 	std::vector<std::byte> m_LocalData;
 
 	Mox::ConstantBufferView* m_DefaultView;
+
+private:
+	//BufferResource() = delete;
+	// A buffer resource is unique in its data and cannot be copied
+	BufferResource& operator=(const BufferResource&) = delete;
+	BufferResource(const BufferResource&) = delete;
 };
 
-// Stores an update for a constant buffer to be then applied by the render thread
-struct ConstantBufferUpdate
+// Representation of a graphics buffer resource owned by the main thread.
+// This internally holds a BufferResource which is the effective graphics 
+// resource handled by the render thread.
+class Buffer
 {
-	ConstantBufferUpdate(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize)
-		: m_Buffer(InBuffer), UpdateData(std::vector<std::byte>(InSize))
-	{
-		memcpy(UpdateData.data(), InData, InSize);
-	}
-	Mox::Buffer& m_Buffer;
-	std::vector<std::byte> UpdateData;
+public:
+	Buffer(Mox::BUFFER_TYPE InType, uint32_t InSize);
+	~Buffer();
 
-	// Note: This will have to be executed by the render thread
-	inline void ApplyUpdate()
-	{
-		m_Buffer.SetData_RenderThread(UpdateData.data(), UpdateData.size());
-	}
+	inline Mox::BUFFER_TYPE GetType() const { return m_BufferType; }
+	inline uint32_t GetSize() const { return m_Size; }
+
+	void SetData(const void* InData, uint32_t InSize);
+
+	// Note: resource is meant to be accessed only by the render thread
+	inline void SetResource(BufferResource* InResource) { m_Resource = InResource; }
+	Mox::BufferResource* GetResource() const { return m_Resource; }
+
+private:
+	Mox::BUFFER_TYPE m_BufferType;
+	uint32_t m_Size;
+
+	// Owned and accessed only by the render thread
+	BufferResource* m_Resource;
+
+	// A buffer needs to be unique in its data and cannot be copied
+	Buffer& operator=(const Buffer&) = delete;
+	Buffer(const Buffer&) = delete;
+	Buffer() = delete;
 };
 
 struct Texture {
 
 	Texture(Mox::Resource& InRes) : m_ReferencedResource(InRes) { }
 
-	virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::Buffer& InIntermediateBuffer) = 0;
+	virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::BufferResource& InIntermediateBuffer) = 0;
 	// Allocate empty space on GPU
 	virtual void InstantiateOnGPU() = 0;
 
@@ -293,17 +323,22 @@ struct ResourceView
 	// Views that are not Gpu allocated at the time of getting considered for drawing inside a pass
 	// will be considered dynamic and a gpu descriptor will be allocated for them on the spot
 	virtual bool IsGpuAllocated() = 0;
+
+	// Prevent accidental copy, each view should be unique
+	ResourceView operator=(const ResourceView&) = delete;
+	ResourceView(const ResourceView&) = delete;
+	ResourceView() = default;
 };
 
 struct ConstantBufferView : public ResourceView {
 
-	virtual void ReferenceBuffer(Mox::Buffer& InBuffer) = 0;
+	virtual void ReferenceBuffer(Mox::BufferResource& InBuffer) = 0;
 
 	virtual void RebuildResourceReference() = 0;
 protected:
-	ConstantBufferView(Mox::Buffer& InBufffer) : m_ReferencedBuffer(InBufffer) { };
+	ConstantBufferView(Mox::BufferResource& InBufffer) : m_ReferencedBuffer(InBufffer) { };
 
-	Mox::Buffer m_ReferencedBuffer;
+	Mox::BufferResource& m_ReferencedBuffer;
 };
 
 struct ShaderResourceView : public ResourceView {

@@ -10,6 +10,7 @@
 #define Entity_h__
 
 #include "MoxMath.h"
+#include "MoxMesh.h" // TODO find a way to remove this dependency
 
 
 namespace Mox {
@@ -20,7 +21,8 @@ class RenderProxy;
 // Defines all the possible input parameters for the creation of an entity
 struct EntityCreationInfo {
 	Mox::Vector3i WorldPosition;
-	std::vector<Mox::Mesh*> Meshes;
+
+	std::vector<struct Mox::MeshCreationInfo> m_MeshCreationInfo;
 };
 
 // Object existing into a World
@@ -35,6 +37,7 @@ public:
 
 	void MultiplyModelMatrix(const Mox::Matrix4f& InNewModelMatrix);
 
+	void SetRenderProxy(Mox::RenderProxy* InProxy) { m_RenderProxy = InProxy; }
 
 private:
 	Mox::Vector3i m_WorldPos;

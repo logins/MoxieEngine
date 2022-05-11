@@ -16,8 +16,8 @@
 namespace Mox{ 
 
 	struct D3D12Resource;
-	struct Buffer;
-	struct D3D12Buffer;
+	struct BufferResource;
+	struct D3D12BufferResource;
 
 	/*
 	D3D12LinearBufferAllocator performs constant buffer sub-allocations in a single buffer resource.
@@ -31,7 +31,7 @@ namespace Mox{
 		~D3D12LinearBufferAllocator();
 
 		// Note: We do not need to pass the alignment since it is decided by the hosting resource
-		Mox::Buffer& Allocate(uint32_t InSize);
+		Mox::BufferResource& Allocate(uint32_t InSize);
 
 
 
@@ -70,7 +70,7 @@ namespace Mox{
 		void* m_ResourceCpuPtr;
 		D3D12_GPU_VIRTUAL_ADDRESS m_ResourceGpuPtr;
 
-		std::vector<Mox::D3D12Buffer> m_AllocatedBuffers;
+		std::vector<std::unique_ptr<Mox::D3D12BufferResource>> m_AllocatedBuffers;
 	};
 
 

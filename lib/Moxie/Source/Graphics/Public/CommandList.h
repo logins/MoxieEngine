@@ -69,7 +69,7 @@ namespace Mox {
 		virtual void ReferenceComputeTable(uint32_t InRootIdx, Mox::UnorderedAccessView& InUav) = 0;
 
 		// Internally calls ::UpdateSubresources(..) where IntermediateBuffer is expected to be allocated in upload heap
-		virtual void UploadBufferData(Mox::Buffer& DestinationBuffer, Mox::Buffer& IntermediateBuffer, const void* InBufferData, size_t InDataSize) = 0;
+		virtual void UploadBufferData(Mox::BufferResource& DestinationBuffer, Mox::BufferResource& IntermediateBuffer, const void* InBufferData, size_t InDataSize) = 0;
 
 	protected:
 		CommandList(Mox::Device& InDevice);

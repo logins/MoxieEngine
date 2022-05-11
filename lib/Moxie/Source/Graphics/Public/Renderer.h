@@ -78,7 +78,7 @@ namespace Mox {
 		/*
 		----- RENDER PARAMETERS UPDATES -----
 		*/
-
+	public:
 		Mox::FrameRenderUpdates m_RenderUpdatesToProcess;
 
 	};

@@ -30,21 +30,90 @@ namespace Mox {
 
 	class PipelineState;
 	class Device;
-	struct Buffer;
+	struct BufferResource;
 	class VertexBuffer;
 	struct VertexBufferView;
 	class IndexBuffer;
 	struct IndexBufferView;
+	class Entity;
+
+	// Stores an update for a constant buffer to be then applied by the render thread
+	struct ConstantBufferUpdate
+	{
+		ConstantBufferUpdate(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize)
+			: m_Buffer(&InBuffer), m_UpdateData(std::vector<std::byte>(InSize))
+		{
+			memcpy(m_UpdateData.data(), InData, InSize);
+		}
+		Mox::Buffer* m_Buffer;
+		std::vector<std::byte> m_UpdateData;
+
+		// Note: This will have to be executed by the render thread
+		inline void ApplyUpdate()
+		{
+			m_Buffer->GetResource()->SetData(m_UpdateData.data(), m_UpdateData.size());
+		}
+	};
+
+	struct BufferResourceRequest
+	{
+		Mox::Buffer* m_TargetBuffer;
+		Mox::BUFFER_TYPE m_BufType;
+		uint32_t m_AllocationSize;
+
+		BufferResourceRequest(Mox::Buffer& InBuffer, Mox::BUFFER_TYPE InType, uint32_t InSize)
+			: m_TargetBuffer(&InBuffer), m_BufType(InType), m_AllocationSize(InSize) { }
+
+	};
+
+	// When the render proxy will be created for the target entity, 
+	// the render resources for the bound meshes will be created as well
+	struct RenderProxyRequest
+	{
+		Mox::Entity* m_TargetEntity;
+
+		std::vector<struct MeshCreationInfo> m_MeshInfos;
+
+		RenderProxyRequest(Mox::Entity& InEntity, const std::vector<struct MeshCreationInfo>& InMeshInfo);
+
+	};
+
+	// Used by the simulation thread to transfer object changes to the render thread
+	struct FrameRenderUpdates
+	{
+		std::vector<Mox::RenderProxyRequest> m_ProxyRequests;
+
+		std::vector<Mox::BufferResourceRequest> m_BufferResourceRequests;
+
+		std::vector<Mox::ConstantBufferUpdate> m_ConstantUpdates;
+
+	};
+
+	// Render updates are meant to be filled in the simulation thread
+	// to then be picked up by the render thread during Application class sync-frame mechanics
+	Mox::FrameRenderUpdates& GetSimThreadUpdatesForRenderer();
+
+	// Stores a request of creating a buffer resource for the given buffer
+	void RequestResourceForBuffer(Mox::Buffer& InBuffer);
+	// Stores a request of releasing the buffer resource associated with the given buffer
+	void ReleaseResourceForBuffer(Mox::Buffer& InBuffer);
+
+	void RequestRenderProxyForEntity(Mox::Entity& InEntity, const std::vector<struct MeshCreationInfo>& InInfo);
+
+	void ReleaseRenderProxyForEntity(Mox::Entity& InEntity);
+
+	void UpdateConstantBufferValue(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize);
+
 
 	// Note: If we had another SDK to choose from, the same functions would be defined again returning objects from the other SDK
 
 	void EnableDebugLayer();
 
-	Mox::Buffer& AllocateDynamicBuffer(size_t InSize);
+	Mox::BufferResource& AllocateDynamicBuffer(size_t InSize);
 
 	Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB);
 	Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat);
-	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::Buffer& InResource);
+	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource);
 
 	Mox::Shader& AllocateShader(wchar_t const* InShaderPath);
 

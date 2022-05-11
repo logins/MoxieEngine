@@ -118,7 +118,7 @@ namespace Mox {
 		m_D3D12CmdList->SetGraphicsRootDescriptorTable(InRootIndex, static_cast<Mox::D3D12ConstantBufferView&>(InView).m_GpuAllocatedRange->m_FirstGpuHandle);
 	}
 
-	void D3D12CommandList::UploadBufferData(Mox::Buffer& DestinationBuffer, Mox::Buffer& IntermediateBuffer, const void* InBufferData, size_t InDataSize)
+	void D3D12CommandList::UploadBufferData(Mox::BufferResource& DestinationBuffer, Mox::BufferResource& IntermediateBuffer, const void* InBufferData, size_t InDataSize)
 	{
 		// Now that both copy and dest resource are created on CPU, we can use them to update the corresponding GPU SubResource
 		D3D12_SUBRESOURCE_DATA subresourceData = {};

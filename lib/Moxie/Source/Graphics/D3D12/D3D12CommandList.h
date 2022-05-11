@@ -60,7 +60,7 @@ namespace Mox {
 		virtual void SetGraphicsRootTable(uint32_t InRootIndex, Mox::ConstantBufferView& InView) override;
 
 	
-		virtual void UploadBufferData(Mox::Buffer& DestinationBuffer, Mox::Buffer& IntermediateBuffer, const void* InBufferData, size_t InDataSize) override;
+		virtual void UploadBufferData(Mox::BufferResource& DestinationBuffer, Mox::BufferResource& IntermediateBuffer, const void* InBufferData, size_t InDataSize) override;
 
 
 		virtual void UploadViewToGPU(Mox::ShaderResourceView& InSRV) override;

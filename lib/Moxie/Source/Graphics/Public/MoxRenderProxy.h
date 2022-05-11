@@ -29,14 +29,5 @@ namespace Mox {
 		std::vector<Mox::Mesh*> m_Meshes;
 	};
 
-
-	// Used by the simulation thread to transfer object changes to the render thread
-	struct FrameRenderUpdates
-	{
-		std::vector<Mox::RenderProxy*> m_NewProxies;
-
-		std::vector<ConstantBufferUpdate> m_ConstantUpdates;
-
-	};
 }
 #endif // MoxRenderProxy_h__

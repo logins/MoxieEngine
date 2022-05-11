@@ -112,6 +112,9 @@ namespace Mox {
 		uint64_t m_DoneRenderFrameNum = 0;
 		uint64_t m_DoneSimFrameNum = 0;
 
+		// Note: m_StagedRenderUpdates is supposed to be accessed in a scope that is locked with the m_FramesMutex
+		Mox::FrameRenderUpdates m_StagedRenderUpdates;
+
 	private:
 		Application(const Application&) = delete; // We do not want Application to be copiable
 		Application& operator=(const Application&) = delete; // We do not want Application to be copy assignable

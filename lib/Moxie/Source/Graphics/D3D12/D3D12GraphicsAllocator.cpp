@@ -18,6 +18,8 @@
 #include "D3D12DescHeapFactory.h"
 #include "D3D12Window.h"
 #include "D3D12CommandQueue.h"
+#include "MoxEntity.h"
+#include "MoxRenderProxy.h"
 
 namespace Mox { 
 
@@ -51,7 +53,21 @@ namespace Mox {
 		return m_GraphicsResources.back();
 	}
 
-	Mox::Buffer& D3D12GraphicsAllocator::AllocateDynamicBuffer(uint32_t InSize)
+	void D3D12GraphicsAllocator::AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest)
+	{
+		// TODO replace BufferResourceRequest with a single buffer reference, 
+		// since we can deduce the buffer type and the size from the buffer itself.
+		// 
+		if (InResourceRequest.m_TargetBuffer->GetType() == BUFFER_TYPE::DYNAMIC)
+		{
+			Mox::BufferResource& newBufferResource = AllocateDynamicBuffer(InResourceRequest.m_TargetBuffer->GetSize());
+
+			InResourceRequest.m_TargetBuffer->SetResource(&newBufferResource);
+		}
+		// TODO needs case for static buffers
+	}
+
+	Mox::BufferResource& D3D12GraphicsAllocator::AllocateDynamicBuffer(uint32_t InSize)
 	{
 		return m_DynamicBufferAllocator->Allocate(InSize);
 	}
@@ -90,7 +106,7 @@ namespace Mox {
 		return m_IndexViewArray.back();
 	}
 
-	Mox::ConstantBufferView& D3D12GraphicsAllocator::AllocateConstantBufferView(Mox::Buffer& InResource)
+	Mox::ConstantBufferView& D3D12GraphicsAllocator::AllocateConstantBufferView(Mox::BufferResource& InResource)
 	{
 		// Allocate the view
 		// Note: the constructor will allocate a corresponding descriptor in a CPU desc heap
@@ -174,19 +190,30 @@ namespace Mox {
 		return *m_CommandQueueArray.back();
 	}
 
-	void D3D12GraphicsAllocator::EnqueueDataChange(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize)
+
+	std::vector<Mox::RenderProxy*> D3D12GraphicsAllocator::CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests)
 	{
-		Mox::ConstantBufferUpdate currentUpdate(InBuffer, InData, InSize);
+		std::vector<Mox::RenderProxy*> outProxies;  outProxies.reserve(InRequests.size());
 
-		m_PendingBufferChanges.emplace_back(currentUpdate);
-	}
+		for (const Mox::RenderProxyRequest& proxyRequest : InRequests)
+		{
+			// Create meshes
+			std::vector<Mox::Mesh*> newMeshes; newMeshes.reserve(proxyRequest.m_MeshInfos.size());
+			for (const Mox::MeshCreationInfo& meshInfo : proxyRequest.m_MeshInfos)
+			{
+				m_MeshArray.emplace_back(std::make_unique<Mox::Mesh>(*meshInfo.m_VertexBuffer, *meshInfo.m_IndexBuffer, meshInfo.m_ShaderParameters));
+				newMeshes.push_back(m_MeshArray.back().get());
+			}
 
-	void D3D12GraphicsAllocator::TransferPendingBufferChanges(std::vector<Mox::ConstantBufferUpdate>& OutBufferUpdates)
-	{
+			// Create proxy
+			m_RenderProxyArray.emplace_back(std::make_unique<Mox::RenderProxy>(newMeshes));
 
-		OutBufferUpdates = std::move(m_PendingBufferChanges);
+			Mox::RenderProxy* newProxy = m_RenderProxyArray.back().get();
+			proxyRequest.m_TargetEntity->SetRenderProxy(newProxy);
+			outProxies.push_back(newProxy);
+		}
 
-		m_PendingBufferChanges = std::vector<Mox::ConstantBufferUpdate>(); // TODO set an expected size of updates when creating this vector
+		return outProxies;
 	}
 
 	Mox::VertexBuffer& D3D12GraphicsAllocator::AllocateVertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize)
@@ -240,7 +267,7 @@ namespace Mox {
 
 	}
 
-	void D3D12GraphicsAllocator::StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::Buffer& InDynBuffer, Mox::ConstantBufferView& InResourceView)
+	void D3D12GraphicsAllocator::StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::BufferResource& InDynBuffer, Mox::ConstantBufferView& InResourceView)
 	{
 		// Create space for current Dynamic Buffer value
 		void* cpuPtr; D3D12_GPU_VIRTUAL_ADDRESS gpuPtr;

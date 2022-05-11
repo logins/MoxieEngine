@@ -46,7 +46,7 @@ namespace Mox{
 	}
 
 
-	Mox::Buffer& D3D12LinearBufferAllocator::Allocate(uint32_t InSize)
+	Mox::BufferResource& D3D12LinearBufferAllocator::Allocate(uint32_t InSize)
 	{
 		uint32_t alignedSize = Mox::Align(InSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
@@ -54,9 +54,9 @@ namespace Mox{
 		// Note: the InSize can be modified by the following function to check if it follows the D3D12 alignment size constraints
 		AllocateMemoryForBuffer(alignedSize, cpuPtr, gpuPtr);
 
-		m_AllocatedBuffers.emplace_back( m_Resource, cpuPtr, gpuPtr, alignedSize);
+		m_AllocatedBuffers.emplace_back( std::make_unique<Mox::D3D12BufferResource>(m_Resource, cpuPtr, gpuPtr, alignedSize) );
 
-		return m_AllocatedBuffers.back();
+		return *m_AllocatedBuffers.back().get();
 	}
 
 	void D3D12LinearBufferAllocator::OnFrameStarted()
@@ -65,14 +65,14 @@ namespace Mox{
 
 		m_RelativeFrameOffsetStarts.push_back(m_CurrentRelativeAllocationOffset);
 
-		for (Mox::Buffer& currrentBuffer : m_AllocatedBuffers)
+		for (auto& currrentBuffer : m_AllocatedBuffers)
 		{
 			void* cpuPtr;
 			GPU_V_ADDRESS gpuPtr;
 			// We first reserve the new memory block for the buffer
-			AllocateMemoryForBuffer(currrentBuffer.GetSize(), cpuPtr, gpuPtr);
+			AllocateMemoryForBuffer(currrentBuffer->GetSize(), cpuPtr, gpuPtr);
 			// Then we copy the previous frame data to the new location
-			currrentBuffer.CopyLocalDataToLocation(cpuPtr, gpuPtr);
+			currrentBuffer->CopyLocalDataToLocation(cpuPtr, gpuPtr);
 
 		}
 

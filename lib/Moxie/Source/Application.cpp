@@ -45,7 +45,8 @@ namespace Mox
 
 	Application::Application()
 	{
-
+		m_DoneSimFrameNum = 0;
+		m_DoneRenderFrameNum = 0;
 	}
 
 	Application::~Application() = default;
@@ -192,8 +193,8 @@ namespace Mox
 		// 
 		// TODO find a better way to move updates from the simulation to the render thread
 
-		m_Renderer->ImportIncomingRenderUpdates(m_Simulator->m_CurrentFrameRenderUpdates);
-
+		m_Renderer->m_RenderUpdatesToProcess = m_StagedRenderUpdates;
+		m_StagedRenderUpdates = Mox::FrameRenderUpdates();
 
 		return true;
 	}
@@ -203,6 +204,11 @@ namespace Mox
 		// --- Critical Section ---
 		{
 			std::lock_guard<std::mutex> simFrameLock(m_FramesMutex);
+
+			// Stage changes requested from the simulation
+			m_StagedRenderUpdates = Mox::GetSimThreadUpdatesForRenderer();
+			Mox::GetSimThreadUpdatesForRenderer() = Mox::FrameRenderUpdates();
+
 			m_DoneSimFrameNum++;
 		}
 		m_SimToRenderFrameCondVar.notify_one();

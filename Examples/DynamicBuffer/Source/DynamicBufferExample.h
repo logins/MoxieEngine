@@ -42,7 +42,7 @@ private:
 	Mox::IndexBuffer* m_IndexBuffer;
 	Mox::IndexBufferView* m_IndexBufferView;
 	// Standalone Constant Buffer for the color modifier
-	Mox::Buffer* m_ColorModBuffer;
+	Mox::BufferResource* m_ColorModBuffer;
 	Mox::ConstantBufferView* m_ColorModBufferView;
 
 	Mox::PipelineState* m_PipelineState;

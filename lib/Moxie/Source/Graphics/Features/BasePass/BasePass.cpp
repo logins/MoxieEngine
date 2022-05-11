@@ -104,17 +104,17 @@ namespace Mox {
 		// such as the root index and the size of data, is already known and expected by the pass.
 
 		// Note: we are assuming to find entries for relative parameters every time
-		std::unordered_map<Mox::SpHash, Mox::ConstantBufferView*>::const_iterator mvpParamValue = InMesh.m_ShaderParameters.find(SPH_mvp);
+		std::unordered_map<Mox::SpHash, Mox::Buffer*>::const_iterator mvpParamValue = InMesh.m_ShaderParameters.find(SPH_mvp);
 
 		Check(mvpParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the MVP shader param value for this mesh
 
-		resourceEntries.emplace_back(0, mvpParamValue->second);
+		resourceEntries.emplace_back(0, mvpParamValue->second->GetResource()->GetView());
 
-		std::unordered_map<Mox::SpHash, Mox::ConstantBufferView*>::const_iterator cModParamValue = InMesh.m_ShaderParameters.find(SPH_c_mod);
+		std::unordered_map<Mox::SpHash, Mox::Buffer*>::const_iterator cModParamValue = InMesh.m_ShaderParameters.find(SPH_c_mod);
 
 		Check(cModParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the c_mod shader param value for this mesh
 
-		resourceEntries.emplace_back(1, cModParamValue->second);
+		resourceEntries.emplace_back(1, cModParamValue->second->GetResource()->GetView());
 
 		return std::move(resourceEntries);
 	}

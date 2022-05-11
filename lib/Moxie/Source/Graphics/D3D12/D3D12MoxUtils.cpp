@@ -407,13 +407,13 @@ namespace Mox
 		return false; // TODO fix me
 	}
 
-	D3D12ConstantBufferView::D3D12ConstantBufferView(Mox::Buffer& InBuffer)
+	D3D12ConstantBufferView::D3D12ConstantBufferView(Mox::BufferResource& InBuffer)
 		: ConstantBufferView(InBuffer)
 	{
 		ReferenceBuffer(InBuffer);
 	}
 
-	void D3D12ConstantBufferView::ReferenceBuffer(Mox::Buffer& InBuffer)
+	void D3D12ConstantBufferView::ReferenceBuffer(Mox::BufferResource& InBuffer)
 	{
 		if (!m_CpuAllocatedRange)
 		{
@@ -528,7 +528,7 @@ namespace Mox
 		}
 	}
 
-	void D3D12Texture::UploadToGPU(Mox::CommandList& InCommandList, Mox::Buffer& InIntermediateBuffer)
+	void D3D12Texture::UploadToGPU(Mox::CommandList& InCommandList, Mox::BufferResource& InIntermediateBuffer)
 	{
 		InstantiateOnGPU();
 

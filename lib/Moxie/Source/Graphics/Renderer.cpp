@@ -40,8 +40,6 @@ RenderThread::RenderThread()
 		pass->SetupPass();
 	}
 
-
-
 }
 
 void RenderThread::Run()

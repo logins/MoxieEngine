@@ -57,7 +57,6 @@ namespace Mox {
 
 		virtual void UpdateContent(float InDeltaTime) = 0;
 
-		virtual void RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView) = 0;
 
 		uint64_t GetCurrentFrameNumber();
 

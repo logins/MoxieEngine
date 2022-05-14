@@ -37,13 +37,10 @@ private:
 
 	// Vertex buffer for the cube
 	Mox::VertexBuffer* m_VertexBuffer;
-	Mox::VertexBufferView* m_VertexBufferView;
 	// Index buffer for the cube
 	Mox::IndexBuffer* m_IndexBuffer;
-	Mox::IndexBufferView* m_IndexBufferView;
 	// Standalone Constant Buffer for the color modifier
-	Mox::BufferResource* m_ColorModBuffer;
-	Mox::ConstantBufferView* m_ColorModBufferView;
+	std::unique_ptr<Mox::Buffer> m_ColorModBuffer;
 
 	Mox::PipelineState* m_PipelineState;
 
@@ -82,7 +79,6 @@ protected:
 
 	virtual void UpdateContent(float InDeltaTime) override;
 
-	virtual void RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView) override;
 
 
 

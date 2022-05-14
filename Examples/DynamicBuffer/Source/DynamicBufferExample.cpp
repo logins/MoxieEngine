@@ -66,22 +66,23 @@ void DynBufExampleApp::OnInitializeContent()
 	std::vector<std::tuple<Mox::SpHash, Mox::Buffer*>> meshShaderParamDefinitions;
 
 	// Creating the buffer for the model matrix
-	Mox::Matrix4f modelMatrix = Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0));
-	Mox::Buffer* mvpBuffer = new Mox::Buffer(Mox::BUFFER_TYPE::DYNAMIC, sizeof(modelMatrix));
+	m_ModelMatrix = Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0));
+	m_MeshMvpBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_TYPE::DYNAMIC, sizeof(m_MvpMatrix));
 
 	const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
 	const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
 	const Eigen::Vector3f upDirection = Eigen::Vector3f(0, 1, 0);
-	Mox::Matrix4f viewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
+	m_ViewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
 	// z_min z_max aspect_ratio fov
-	Mox::Matrix4f projMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, 0.7853981634f);
+	m_Fov = 0.7853981634f; // 45 degrees in radians
+	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, m_Fov);
 
-	Mox::Matrix4f mvpValue = projMatrix * viewMatrix * modelMatrix;
+	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
 
-	mvpBuffer->SetData(mvpValue.data(), sizeof(mvpValue));
+	m_MeshMvpBuffer->SetData(m_MvpMatrix.data(), sizeof(m_MvpMatrix));
 
 	// Setting the relative shader parameter
-	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("mvp"), mvpBuffer);
+	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("mvp"), m_MeshMvpBuffer.get());
 
 	// Creating buffer for the color mod
 	m_ColorModBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_TYPE::DYNAMIC, sizeof(float));
@@ -111,7 +112,12 @@ void DynBufExampleApp::OnQuitApplication()
 void DynBufExampleApp::OnMouseWheel(float InDeltaRot)
 {
 	// TODO this needs to be passed by message to the renderer
-	//SetFov(std::max(0.2094395102f, std::min(m_MainWindowView.m_Fov -= InDeltaRot / 1200.f, 1.570796327f))); // clamping
+	m_Fov = std::max(0.2094395102f, std::min(m_Fov -= InDeltaRot / 1200.f, 1.570796327f)); // clamping
+
+	// z_min z_max aspect_ratio fov
+	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, m_Fov);
+	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
+	m_MeshMvpBuffer->SetData(m_MvpMatrix.data(), sizeof(m_MvpMatrix));
 }
 
 void DynBufExampleApp::OnMouseMove(int32_t InX, int32_t InY)
@@ -132,7 +138,10 @@ void DynBufExampleApp::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 	tr.rotate(Mox::AngleAxisf(-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), Mox::Vector3f::UnitY()))
 		.rotate(Mox::AngleAxisf(-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), Mox::Vector3f::UnitX()));
 
-	m_CubeEntity->MultiplyModelMatrix(tr.matrix());
+	//m_CubeEntity->MultiplyModelMatrix(tr.matrix()); // TODO implement and use entity rotation here
+	m_ModelMatrix = tr.matrix() * m_ModelMatrix;
+	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
+	m_MeshMvpBuffer->SetData(m_MvpMatrix.data(), sizeof(m_MvpMatrix));
 }
 
 void DynBufExampleApp::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
@@ -141,7 +150,10 @@ void DynBufExampleApp::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 	tr.setIdentity();
 	tr.translate(Eigen::Vector3f(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0));
 
-	m_CubeEntity->MultiplyModelMatrix(tr.matrix());
+	//m_CubeEntity->MultiplyModelMatrix(tr.matrix()); // TODO implement and use entity traslation here
+	m_ModelMatrix = tr.matrix() * m_ModelMatrix;
+	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
+	m_MeshMvpBuffer->SetData(m_MvpMatrix.data(), sizeof(m_MvpMatrix));
 }
 
 void DynBufExampleApp::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)

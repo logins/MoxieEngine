@@ -88,7 +88,6 @@ namespace Mox {
 		// Render related
 
 		void SetAspectRatio(float InAspectRatio);
-		void SetFov(float InFov);
 
 		void OnMainWindowClose();
 		void OnWindowPaint();

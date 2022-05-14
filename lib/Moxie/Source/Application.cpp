@@ -238,15 +238,6 @@ namespace Mox
 		m_IsTerminating = true;
 	}
 
-	void Application::SetFov(float InFov)
-	{
-		char buffer[256];
-		::sprintf_s(buffer, "Fov: %f\n", InFov);
-		::OutputDebugStringA(buffer);
-
-		// TODO this needs to be passed as message to the renderer
-		//m_MainContextView.SetFov(InFov);
-	}
 
 	void Application::SetAspectRatio(float InAspectRatio)
 	{

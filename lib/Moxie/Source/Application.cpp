@@ -44,9 +44,9 @@ namespace Mox
 
 
 	Application::Application()
+		: m_DoneSimFrameNum(0), m_DoneRenderFrameNum(0)
 	{
-		m_DoneSimFrameNum = 0;
-		m_DoneRenderFrameNum = 0;
+
 	}
 
 	Application::~Application() = default;
@@ -199,6 +199,9 @@ namespace Mox
 		return true;
 	}
 
+// Moves Src vector at the end of Dst
+#define MOVE_VEC(Dst,Src) Dst.insert(Dst.end(),std::make_move_iterator(Src.begin()),std::make_move_iterator(Src.end()));
+
 	void Application::SyncForFrameEnd_SimThread()
 	{
 		// --- Critical Section ---
@@ -206,7 +209,11 @@ namespace Mox
 			std::lock_guard<std::mutex> simFrameLock(m_FramesMutex);
 
 			// Stage changes requested from the simulation
-			m_StagedRenderUpdates = Mox::GetSimThreadUpdatesForRenderer();
+			const auto& newUpdates = Mox::GetSimThreadUpdatesForRenderer();
+			MOVE_VEC(m_StagedRenderUpdates.m_BufferResourceRequests, newUpdates.m_BufferResourceRequests)
+			MOVE_VEC(m_StagedRenderUpdates.m_ConstantUpdates, newUpdates.m_ConstantUpdates)
+			MOVE_VEC(m_StagedRenderUpdates.m_ProxyRequests, newUpdates.m_ProxyRequests)
+
 			Mox::GetSimThreadUpdatesForRenderer() = Mox::FrameRenderUpdates();
 
 			m_DoneSimFrameNum++;

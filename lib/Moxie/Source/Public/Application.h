@@ -109,8 +109,8 @@ namespace Mox {
 		// The following two variables are used for inter-thread frame syncing between Simulation and Render thread:
 		// Simulation frame n will start only when the previous n-1 render frame is done
 		// and, at the same time, Render frame will start only when current simulation data has been computed
-		uint64_t m_DoneRenderFrameNum = 0;
-		uint64_t m_DoneSimFrameNum = 0;
+		uint64_t m_DoneRenderFrameNum;
+		uint64_t m_DoneSimFrameNum;
 
 		// Note: m_StagedRenderUpdates is supposed to be accessed in a scope that is locked with the m_FramesMutex
 		Mox::FrameRenderUpdates m_StagedRenderUpdates;

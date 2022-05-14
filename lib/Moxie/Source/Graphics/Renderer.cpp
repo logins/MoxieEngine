@@ -160,7 +160,7 @@ void RenderThread::SetMainWindow(Mox::Window* InMainWindow)
 
 void RenderThread::ImportIncomingRenderUpdates(Mox::FrameRenderUpdates& InOutRenderUpdates)
 {
-	m_RenderUpdatesToProcess = InOutRenderUpdates;//std::move(InOutRenderUpdates);
+	m_RenderUpdatesToProcess = std::move(InOutRenderUpdates);
 
 	InOutRenderUpdates = Mox::FrameRenderUpdates();
 }

@@ -74,8 +74,8 @@ void DynBufExampleApp::OnInitializeContent()
 	const Eigen::Vector3f upDirection = Eigen::Vector3f(0, 1, 0);
 	m_ViewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
 	// z_min z_max aspect_ratio fov
-	m_Fov = 0.7853981634f; // 45 degrees in radians
-	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, m_Fov);
+	m_FovYRad = 0.7853981634f; // 45 degrees in radians
+	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, m_FovYRad);
 
 	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
 
@@ -112,10 +112,14 @@ void DynBufExampleApp::OnQuitApplication()
 void DynBufExampleApp::OnMouseWheel(float InDeltaRot)
 {
 	// TODO this needs to be passed by message to the renderer
-	m_Fov = std::max(0.2094395102f, std::min(m_Fov -= InDeltaRot / 1200.f, 1.570796327f)); // clamping
+	float newFovYRad = std::max(0.2094395102f, std::min(m_FovYRad -= InDeltaRot / 1200.f, 1.570796327f)); // clamping
+
+	//char buffer[256];
+	//::sprintf_s(buffer, "Fov: %f\n", m_Fov);
+	//::OutputDebugStringA(buffer);
 
 	// z_min z_max aspect_ratio fov
-	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, m_Fov);
+	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, newFovYRad);
 	m_MvpMatrix = m_ProjMatrix * m_ViewMatrix * m_ModelMatrix;
 	m_MeshMvpBuffer->SetData(m_MvpMatrix.data(), sizeof(m_MvpMatrix));
 }

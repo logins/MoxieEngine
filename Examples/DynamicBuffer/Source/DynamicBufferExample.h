@@ -51,7 +51,7 @@ private:
 	Mox::Matrix4f m_MvpMatrix;
 	Mox::Matrix4f m_ModelMatrix;
 	Mox::Matrix4f m_ViewMatrix;
-	float m_Fov;
+	float m_FovYRad;
 	Mox::Matrix4f m_ProjMatrix;
 
 	// Vertex data for colored cube

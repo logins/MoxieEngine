@@ -12,9 +12,9 @@
 
 namespace Mox {
 
-Mesh::Mesh(const Mox::VertexBuffer& InVertexBuffer, const Mox::IndexBuffer& InIndexBuffer,
+Mesh::Mesh(Mox::VertexBuffer& InVertexBuffer, Mox::IndexBuffer& InIndexBuffer,
 	const std::vector<std::tuple<Mox::SpHash, Mox::Buffer*>>& InShaderParams)
-	: m_VertexBufferView(*InVertexBuffer.GetView()), m_IndexBufferView(*InIndexBuffer.GetView()),
+	: m_VertexBuffer(InVertexBuffer), m_IndexBuffer(InIndexBuffer),
 	m_ModelMatrix(Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1,1,1), Mox::Vector3f(0,0,0))),
 	m_Material(Mox::Material::DefaultMaterial)
 {

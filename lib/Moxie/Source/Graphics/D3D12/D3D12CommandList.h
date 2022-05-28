@@ -25,7 +25,7 @@ namespace Mox {
 		
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2>& GetInner() { return m_D3D12CmdList; }
 
-		virtual void ResourceBarrier(Mox::Resource& InResource, Mox::RESOURCE_STATE InPrevState, Mox::RESOURCE_STATE InAfterState) override;
+		virtual void ResourceBarriers(const TransitionInfoVector& InTransitions) override;
 
 
 		virtual void ClearRTV(Mox::CpuDescHandle& InDescHandle, float* InColor) override;

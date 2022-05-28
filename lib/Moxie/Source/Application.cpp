@@ -211,7 +211,8 @@ namespace Mox
 			// Stage changes requested from the simulation
 			const auto& newUpdates = Mox::GetSimThreadUpdatesForRenderer();
 			MOVE_VEC(m_StagedRenderUpdates.m_BufferResourceRequests, newUpdates.m_BufferResourceRequests)
-			MOVE_VEC(m_StagedRenderUpdates.m_ConstantUpdates, newUpdates.m_ConstantUpdates)
+			MOVE_VEC(m_StagedRenderUpdates.m_DynamicBufferUpdates, newUpdates.m_DynamicBufferUpdates)
+			MOVE_VEC(m_StagedRenderUpdates.m_StaticBufferUpdates, newUpdates.m_StaticBufferUpdates)
 			MOVE_VEC(m_StagedRenderUpdates.m_ProxyRequests, newUpdates.m_ProxyRequests)
 
 			Mox::GetSimThreadUpdatesForRenderer() = Mox::FrameRenderUpdates();

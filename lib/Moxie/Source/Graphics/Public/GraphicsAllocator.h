@@ -42,11 +42,11 @@ public:
 
 	virtual void OnNewFrameEnded() = 0;
 
-	virtual void OnStartRenderMainView(Mox::CommandList& InCmdList) = 0;
+	virtual void UpdateStaticResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates) = 0;
 
-	virtual Mox::VertexBuffer& AllocateVertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize) = 0;
+	virtual Mox::VertexBuffer& AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) = 0;
 
-	virtual Mox::IndexBuffer& AllocateIndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum) = 0;
+	virtual Mox::IndexBuffer& AllocateIndexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) = 0;
 
 	virtual Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) = 0;
 
@@ -62,10 +62,9 @@ public:
 	// First creates an intermediary buffer in shared memory (upload heap), then the same buffer in reserved memory (default heap)
 	// and then calls UpdateSubresources that will copy the content of the first buffer in the second one.
 	// The type of allocation is Committed Resource, meaning that a resource heap will be created specifically to contain the allocated resource each time.
-	virtual Mox::Resource& AllocateBufferCommittedResource(Mox::CommandList& InCmdList, const void* InBufferData, uint32_t InSize, Mox::RESOURCE_FLAGS InFlags = Mox::RESOURCE_FLAGS::NONE) = 0;
 
-	virtual Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB) = 0;
-	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat) = 0;
+	virtual Mox::VertexBufferView& AllocateVertexBufferView(Mox::BufferResource& InVBResource) = 0;
+	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum) = 0;
 	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource) = 0;
 
 	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) = 0;

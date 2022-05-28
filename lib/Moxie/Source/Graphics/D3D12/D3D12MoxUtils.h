@@ -118,7 +118,9 @@ namespace Mox {
 
 		// This constructor will be very expensive! It creates a buffer resource in upload heap and orders a copy to a second new resource in default heap
 		// TODO it will need changing
-		D3D12Resource(Mox::CommandList& InCmdList, const void* InBufferData, size_t InSize, Mox::RESOURCE_FLAGS InFlags);
+
+
+		D3D12Resource(D3D12_RES_TYPE InResType, RESOURCE_HEAP_TYPE InHeapType, size_t InSize, Mox::RESOURCE_FLAGS InFlags, Mox::RESOURCE_STATE InState);
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>& GetInner() { return m_D3D12Resource; }
 		void SetInner(Microsoft::WRL::ComPtr<ID3D12Resource> InResource) { m_D3D12Resource = InResource; }
@@ -127,7 +129,6 @@ namespace Mox {
 		void UnMap() { m_D3D12Resource->Unmap(0, nullptr); }
 
 		// Note: The Size will be aligned with D3D12 buffer constraints
-		virtual void SetCpuData(const void* InData, size_t InSize);
 
 		// Prevent copy construct or copy assignment
 		D3D12Resource& operator=(const D3D12Resource& InObjToCopy) = delete;
@@ -136,20 +137,13 @@ namespace Mox {
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_D3D12Resource;
 		// TODO delete this once we implement placed resources!!
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_IntermediateResource;
 	};
 
 	struct D3D12BufferResource : public Mox::BufferResource {
 		// Constructor for static buffer covering the whole resource
-		D3D12BufferResource(Mox::Resource& InResource)
-			: Mox::BufferResource(Mox::BUFFER_TYPE::STATIC, InResource)
-		{
-			// We need to have the size as a multiple of the alignment
-			Check(GetSize() % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
-		}
-		// Constructor for dynamic buffer
-		D3D12BufferResource(Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize)
-			: Mox::BufferResource(Mox::BUFFER_TYPE::DYNAMIC, InResource, InCpuPtr, InGpuPtr, InSize)
+		D3D12BufferResource(Mox::RES_CONTENT_TYPE InContentType, Mox::BUFFER_ALLOC_TYPE InAllocType,
+			Mox::Resource& InResource, void* InCpuPtr, Mox::GPU_V_ADDRESS InGpuPtr, uint32_t InSize, uint32_t InStride = 1)
+			: Mox::BufferResource(InContentType, InAllocType, InResource, InCpuPtr, InGpuPtr, InSize, InStride)
 		{
 			
 		}
@@ -254,18 +248,18 @@ namespace Mox {
 	};
 
 	struct D3D12VertexBufferView : public Mox::VertexBufferView {
-		D3D12VertexBufferView(Mox::VertexBuffer& InVB) : Mox::VertexBufferView(InVB) { ReferenceResource(InVB); }
-		virtual void ReferenceResource(Mox::VertexBuffer& InVB);
+		D3D12VertexBufferView(Mox::BufferResource& InVB) : Mox::VertexBufferView(InVB) { ReferenceResource(InVB); }
+		virtual void ReferenceResource(Mox::BufferResource& InVB);
 
 		D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
 
 	};
 
 	struct D3D12IndexBufferView : public Mox::IndexBufferView {
-		D3D12IndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat)
-			: Mox::IndexBufferView(InIB) 
-		{ ReferenceResource(InIB, InFormat); }
-		virtual void ReferenceResource(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat);
+		D3D12IndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum)
+			: Mox::IndexBufferView(InIB, InFormat, InElementsNum)
+		{ ReferenceResource(InIB, InFormat, InElementsNum); }
+		virtual void ReferenceResource(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum);
 
 		D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 	};

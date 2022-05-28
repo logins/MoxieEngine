@@ -297,18 +297,21 @@ namespace Mox
 		return rootSignature;
 	}
 
-	void D3D12VertexBufferView::ReferenceResource(Mox::VertexBuffer& InVB)
+	void D3D12VertexBufferView::ReferenceResource(Mox::BufferResource& InVB)
 	{
 		// Note: A Vertex Buffer View does not use any descriptor from a desc heap
-		m_VertexBufferView.BufferLocation = InVB.GetGpuData();
+		m_VertexBufferView.BufferLocation = InVB.GetGpuPtr();
 		m_VertexBufferView.SizeInBytes = InVB.GetSize();
 		m_VertexBufferView.StrideInBytes = InVB.GetStride();
 	}
 
-	void D3D12IndexBufferView::ReferenceResource(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat)
+	void D3D12IndexBufferView::ReferenceResource(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum)
 	{
+		m_ElementsNum = InElementsNum; // TODO elements num can be deduced by 
+		// providing a function BufferFormatSize(InFormat) to be used as ElementsNum = bufferSize / bufferFormat
+
 		// Note: An Index Buffer View does not use any descriptor from a desc heap
-		m_IndexBufferView.BufferLocation = InIB.GetGpuData();
+		m_IndexBufferView.BufferLocation = InIB.GetGpuPtr();
 		m_IndexBufferView.SizeInBytes = InIB.GetSize();
 		m_IndexBufferView.Format = Mox::BufferFormatToD3D12(InFormat);
 	}
@@ -438,13 +441,6 @@ namespace Mox
 		ReferenceBuffer(m_ReferencedBuffer);
 	}
 
-	void D3D12Resource::SetCpuData(const void* InData, size_t InSize)
-	{
-		if (m_Data.size() < InSize)
-			m_Data.resize(InSize);
-		
-		memcpy(m_Data.data(), InData, InSize);
-	}
 
 	D3D12Resource::D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType) : m_D3D12Resource(InD3D12Res)//std::move(InD3D12Res))
 	{
@@ -455,7 +451,6 @@ namespace Mox
 			D3D12_RESOURCE_DESC resDesc = m_D3D12Resource->GetDesc();
 			m_DataSize = resDesc.Width * resDesc.Height;
 
-			m_Data = std::vector<std::byte>(m_DataSize);
 
 			m_GpuPtr = m_D3D12Resource->GetGPUVirtualAddress();
 		}
@@ -464,43 +459,27 @@ namespace Mox
 
 	}
 
-	D3D12Resource::D3D12Resource(Mox::CommandList& InCmdList, const void* InBufferData, size_t InSize, Mox::RESOURCE_FLAGS InFlags)
+	D3D12Resource::D3D12Resource(Mox::D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, size_t InSize, Mox::RESOURCE_FLAGS InFlags, Mox::RESOURCE_STATE InState)
 	{
-		// Note: A buffer needs to have an alignment multiple of D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT which is now 256
-		// Assuming D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT is a power of 2, we can align the input value with this formula
-		m_AlignmentSize = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
-
 		InSize = Mox::Align(InSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+		// If passed size is 0, set it to minimum resource size
+		if (InSize == 0)
+			InSize = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
 		m_DataSize = InSize;
-		
+		m_AlignmentSize = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 		// Note: SetCpuData will align InSize with D3D12 buffer constraints
-		SetCpuData(InBufferData, InSize);
 
-		// Note: ID3D12Resource** InDestResource, ID3D12Resource** InIntermediateResource are CPU Buffer Data !!!
-		// We create them on CPU, then we use them to update the corresponding SubResouce on the GPU!
-		
-		// Create a committed resource for the GPU resource in a default heap
-		// Note: CreateCommittedResource will allocate a resource heap and a resource in it in GPU memory, then it will return the corresponding GPUVirtualAddress that will be stored inside the ID3D12Resource object,
-		// so that we can reference that GPU memory address from CPU side.
-		Mox::CreateCommittedResource(static_cast<Mox::D3D12Device&>(Mox::GetDevice()).GetInner(), GetInner().GetAddressOf(),
-			D3D12_HEAP_TYPE_DEFAULT, InSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST);
-		
+		 // At the moment we are handling only committed resources
+		Mox::CreateCommittedResource(static_cast<Mox::D3D12Device&>(
+			Mox::GetDevice()).GetInner(), 
+			m_D3D12Resource.GetAddressOf(),
+			HeapTypeToD3D12(InHeapType), 
+			InSize, Mox::ResFlagsToD3D12(InFlags), 
+			Mox::ResStateTypeToD3D12(InState));
+
 		m_GpuPtr = m_D3D12Resource->GetGPUVirtualAddress();
 
-		// Create a committed resource in an upload heap to upload content to the first resource
-		Mox::CreateCommittedResource(static_cast<Mox::D3D12Device&>(Mox::GetDevice()).GetInner(), m_IntermediateResource.GetAddressOf(),
-			D3D12_HEAP_TYPE_UPLOAD, InSize, Mox::ResFlagsToD3D12(InFlags), D3D12_RESOURCE_STATE_GENERIC_READ);
-
-		// Now that both copy and dest resource are created on CPU, we can use them to update the corresponding GPU SubResource
-		D3D12_SUBRESOURCE_DATA subresourceData = {};
-		subresourceData.pData = InBufferData; // Pointer to the memory block that contains the subresource data on CPU
-		subresourceData.RowPitch = InSize; // Physical size in Bytes of the subresource data
-		subresourceData.SlicePitch = subresourceData.RowPitch; // Size of each slice for the resource, since we assume only 1 slice, this corresponds to the size of the entire resource
-		// Note: UpdateSubresources first uploads data in the intermediate resource, which is expected to be in shared memory (upload heap) 
-		// and then transfers the content to the destination resource, expected to be in dedicated memory (default heap) probably trough a mapping mechanism
-		::UpdateSubresources(static_cast<Mox::D3D12CommandList&>(InCmdList).GetInner().Get(), GetInner().Get(), m_IntermediateResource.Get(), 0, 0, 1, &subresourceData);
-		
 	}
 
 	void D3D12Texture::SetGeneralTextureParams(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels, Mox::RESOURCE_FLAGS InCreationFlags)

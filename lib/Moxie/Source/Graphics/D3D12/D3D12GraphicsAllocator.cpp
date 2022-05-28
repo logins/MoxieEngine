@@ -13,13 +13,14 @@
 #include "D3D12Device.h"
 #include "D3D12UtilsInternal.h"
 #include "MoxUtils.h"
-#include "D3D12BufferAllocator.h"
+#include "D3D12DynamicBufferAllocator.h"
 #include "Application.h"
 #include "D3D12DescHeapFactory.h"
 #include "D3D12Window.h"
 #include "D3D12CommandQueue.h"
 #include "MoxEntity.h"
 #include "MoxRenderProxy.h"
+#include "D3D12StaticBufferAllocator.h"
 
 namespace Mox { 
 
@@ -29,26 +30,19 @@ namespace Mox {
 
 	D3D12GraphicsAllocator::~D3D12GraphicsAllocator()
 	{
+		m_StaticBufferAllocator.reset();
 		m_DynamicBufferAllocator.reset();
 
 		m_DescHeapFactory.reset();
 
 	}
 
-	Mox::D3D12Resource& D3D12GraphicsAllocator::AllocateResourceForBuffer(uint32_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags /*= RESOURCE_FLAGS::NONE*/)
+	Mox::D3D12Resource& D3D12GraphicsAllocator::AllocateGraphicsBufferResource(
+		uint32_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags /*= RESOURCE_FLAGS::NONE*/)
 	{
-		// If passed size is 0, set it to minimum resource size
-		if (InSize == 0)
-			InSize = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> d3d12Resource;
-		Mox::CreateCommittedResource(
-			static_cast<Mox::D3D12Device&>(Mox::GetDevice()).GetInner(), d3d12Resource.GetAddressOf(),
-			Mox::HeapTypeToD3D12(InHeapType), InSize, Mox::ResFlagsToD3D12(InFlags), Mox::ResourceStateTypeToD3D12(InState));
+		m_GraphicsResources.emplace_back(Mox::D3D12_RES_TYPE::Buffer, InHeapType, InSize, InFlags, InState);
 
-		m_GraphicsResources.emplace_back( d3d12Resource );
-
-		d3d12Resource.Reset();
 
 		return m_GraphicsResources.back();
 	}
@@ -58,13 +52,26 @@ namespace Mox {
 		// TODO replace BufferResourceRequest with a single buffer reference, 
 		// since we can deduce the buffer type and the size from the buffer itself.
 		// 
-		if (InResourceRequest.m_TargetBuffer->GetType() == BUFFER_TYPE::DYNAMIC)
+		switch (InResourceRequest.m_TargetBufferHolder->GetAllocType())
 		{
-			Mox::BufferResource& newBufferResource = AllocateDynamicBuffer(InResourceRequest.m_TargetBuffer->GetSize());
-
-			InResourceRequest.m_TargetBuffer->SetResource(&newBufferResource);
+		case BUFFER_ALLOC_TYPE::DYNAMIC:
+		{
+			Mox::BufferResource& newBufferResource = AllocateDynamicBuffer(InResourceRequest.m_TargetBufferHolder->GetSize());
+			InResourceRequest.m_TargetBufferHolder->SetBufferResource(newBufferResource);
+			break;
 		}
-		// TODO needs case for static buffers
+		case BUFFER_ALLOC_TYPE::STATIC:
+		{
+			Mox::BufferResource& newBufferResource = m_StaticBufferAllocator->Allocate(InResourceRequest);
+			InResourceRequest.m_TargetBufferHolder->SetBufferResource(newBufferResource);
+			break;
+		}
+		default:
+		{
+			StopForFail("Buffer allocation type not recognized.")
+		}
+		}
+
 	}
 
 	Mox::BufferResource& D3D12GraphicsAllocator::AllocateDynamicBuffer(uint32_t InSize)
@@ -84,25 +91,17 @@ namespace Mox {
 		return *m_TextureArray.back();
 	}
 
-	Mox::Resource& D3D12GraphicsAllocator::AllocateBufferCommittedResource(Mox::CommandList& InCmdList, const void* InBufferData, uint32_t InSize, Mox::RESOURCE_FLAGS InFlags /*= Mox::RESOURCE_FLAGS::NONE*/)
+
+
+	Mox::VertexBufferView& D3D12GraphicsAllocator::AllocateVertexBufferView(Mox::BufferResource& InVBResource)
 	{
-		m_GraphicsResources.emplace_back(InCmdList, InBufferData, InSize, InFlags);
-		
-		return m_GraphicsResources.back();
-
-
-	}
-
-
-	Mox::VertexBufferView& D3D12GraphicsAllocator::AllocateVertexBufferView(Mox::VertexBuffer& InVB)
-	{
-		m_VertexViewArray.emplace_back( InVB ); //TODO possibly checking to not pass a certain number of allocations
+		m_VertexViewArray.emplace_back( InVBResource ); //TODO possibly checking to not pass a certain number of allocations
 		return m_VertexViewArray.back();
 	}
 
-	Mox::IndexBufferView& D3D12GraphicsAllocator::AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat)
+	Mox::IndexBufferView& D3D12GraphicsAllocator::AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum)
 {
-		m_IndexViewArray.emplace_back( InIB, InFormat);
+		m_IndexViewArray.emplace_back(InIB, InFormat, InElementsNum);
 		return m_IndexViewArray.back();
 	}
 
@@ -216,15 +215,15 @@ namespace Mox {
 		return outProxies;
 	}
 
-	Mox::VertexBuffer& D3D12GraphicsAllocator::AllocateVertexBuffer(Mox::CommandList& InCmdList, const void* InData, uint32_t InStride, uint32_t InSize)
+	Mox::VertexBuffer& D3D12GraphicsAllocator::AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize)
 	{
-		m_VertexBufferArray.emplace_back(InCmdList, InData, InStride, InSize);
+		m_VertexBufferArray.emplace_back(InData, InStride, InSize);
 		return m_VertexBufferArray.back();
 	}
 
-	Mox::IndexBuffer& D3D12GraphicsAllocator::AllocateIndexBuffer(Mox::CommandList& InCmdList, const void* InData, int32_t InSize, int32_t InElementsNum)
+	Mox::IndexBuffer& D3D12GraphicsAllocator::AllocateIndexBuffer(const void* InData, uint32_t InStride, uint32_t InSize)
 	{
-		m_IndexBufferArray.emplace_back(InCmdList, InData, InSize, InElementsNum);
+		m_IndexBufferArray.emplace_back(InData, InStride, InSize);
 		return m_IndexBufferArray.back();
 	}
 
@@ -249,9 +248,9 @@ namespace Mox {
 		m_DynamicBufferAllocator->OnFrameEnded();
 	}
 
-	void D3D12GraphicsAllocator::OnStartRenderMainView(Mox::CommandList& InCmdList)
+	void D3D12GraphicsAllocator::UpdateStaticResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates)
 	{
-
+		m_StaticBufferAllocator->UploadContentUpdates(InCmdList, InUpdates);
 
 	}
 
@@ -261,10 +260,15 @@ namespace Mox {
 
 		// Allocate an empty resource and create the dynamic buffer allocator on it
 		// Note: We are using a system similar to what described for Diligent Engine https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D
-		Mox::D3D12Resource& dynamicBufferResource = AllocateResourceForBuffer(0, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& dynamicBufferResource = AllocateGraphicsBufferResource(0, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
 
-		m_DynamicBufferAllocator = std::make_unique<Mox::D3D12LinearBufferAllocator>(dynamicBufferResource);
+		m_DynamicBufferAllocator = std::make_unique<Mox::D3D12DynamicBufferAllocator>(dynamicBufferResource);
 
+
+		Mox::D3D12Resource& targetBufferResource = AllocateGraphicsBufferResource(0, RESOURCE_HEAP_TYPE::DEFAULT, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& stagingBufferResource = AllocateGraphicsBufferResource(0, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+
+		m_StaticBufferAllocator = std::make_unique<Mox::D3D12StaticBufferAllocator>(targetBufferResource, stagingBufferResource);
 	}
 
 	void D3D12GraphicsAllocator::StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::BufferResource& InDynBuffer, Mox::ConstantBufferView& InResourceView)

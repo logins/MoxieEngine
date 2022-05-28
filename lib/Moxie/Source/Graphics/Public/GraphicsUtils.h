@@ -38,31 +38,34 @@ namespace Mox {
 	class Entity;
 
 	// Stores an update for a constant buffer to be then applied by the render thread
-	struct ConstantBufferUpdate
+	struct BufferResourceUpdate
 	{
-		ConstantBufferUpdate(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize)
-			: m_Buffer(&InBuffer), m_UpdateData(std::vector<std::byte>(InSize))
+		BufferResourceUpdate(Mox::BufferResourceHolder& InBufferHolder, const void* InData, uint32_t InSize)
+			: m_BufResHolder(&InBufferHolder), m_UpdateData(std::vector<std::byte>(InSize))
 		{
 			memcpy(m_UpdateData.data(), InData, InSize);
 		}
-		Mox::Buffer* m_Buffer;
+		Mox::BufferResourceHolder* m_BufResHolder;
 		std::vector<std::byte> m_UpdateData;
-
 		// Note: This will have to be executed by the render thread
 		inline void ApplyUpdate()
 		{
-			m_Buffer->GetResource()->SetData(m_UpdateData.data(), m_UpdateData.size());
+			m_BufResHolder->GetResource()->SetData(m_UpdateData.data(), m_UpdateData.size());
 		}
 	};
 
 	struct BufferResourceRequest
 	{
-		Mox::Buffer* m_TargetBuffer;
-		Mox::BUFFER_TYPE m_BufType;
+		Mox::BufferResourceHolder* m_TargetBufferHolder;
+		Mox::RES_CONTENT_TYPE m_ContentType;
+		Mox::BUFFER_ALLOC_TYPE m_AllocType;
+		uint32_t m_Stride;
 		uint32_t m_AllocationSize;
 
-		BufferResourceRequest(Mox::Buffer& InBuffer, Mox::BUFFER_TYPE InType, uint32_t InSize)
-			: m_TargetBuffer(&InBuffer), m_BufType(InType), m_AllocationSize(InSize) { }
+		BufferResourceRequest(Mox::BufferResourceHolder& InBufferHolder, Mox::RES_CONTENT_TYPE InContentType, 
+			Mox::BUFFER_ALLOC_TYPE InAllocType, uint32_t InSize, uint32_t InStride)
+			: m_TargetBufferHolder(&InBufferHolder), m_ContentType(InContentType), 
+			m_AllocType(InAllocType), m_Stride(InStride), m_AllocationSize(InSize) { }
 
 	};
 
@@ -85,8 +88,9 @@ namespace Mox {
 
 		std::vector<Mox::BufferResourceRequest> m_BufferResourceRequests;
 
-		std::vector<Mox::ConstantBufferUpdate> m_ConstantUpdates;
+		std::vector<Mox::BufferResourceUpdate> m_DynamicBufferUpdates;
 
+		std::vector<Mox::BufferResourceUpdate> m_StaticBufferUpdates;
 	};
 
 	// Render updates are meant to be filled in the simulation thread
@@ -94,7 +98,7 @@ namespace Mox {
 	Mox::FrameRenderUpdates& GetSimThreadUpdatesForRenderer();
 
 	// Stores a request of creating a buffer resource for the given buffer
-	void RequestResourceForBuffer(Mox::Buffer& InBuffer);
+	void RequestBufferResourceForHolder(Mox::BufferResourceHolder& InHolder);
 	// Stores a request of releasing the buffer resource associated with the given buffer
 	void ReleaseResourceForBuffer(Mox::Buffer& InBuffer);
 
@@ -102,7 +106,7 @@ namespace Mox {
 
 	void ReleaseRenderProxyForEntity(Mox::Entity& InEntity);
 
-	void UpdateConstantBufferValue(Mox::Buffer& InBuffer, const void* InData, uint32_t InSize);
+	void UpdateConstantBufferValue(Mox::BufferResourceHolder& InBufferHolder, const void* InData, uint32_t InSize);
 
 
 	// Note: If we had another SDK to choose from, the same functions would be defined again returning objects from the other SDK
@@ -111,8 +115,8 @@ namespace Mox {
 
 	Mox::BufferResource& AllocateDynamicBuffer(size_t InSize);
 
-	Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB);
-	Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat);
+	Mox::VertexBufferView& AllocateVertexBufferView(Mox::BufferResource& InVBResource);
+	Mox::IndexBufferView& AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum);
 	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource);
 
 	Mox::Shader& AllocateShader(wchar_t const* InShaderPath);

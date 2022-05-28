@@ -48,17 +48,13 @@ DynBufExampleApp::DynBufExampleApp() = default;
 void DynBufExampleApp::OnInitializeContent()
 {		
 	// Load Content
-	Mox::CommandList& loadContentCmdList = m_Renderer->GetCmdQueue()->GetAvailableCommandList(); // TODO renderer should not need to be exposed to the derived application
 
-	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(loadContentCmdList, m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
-	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(loadContentCmdList, m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
+	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
+	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
 
 
 
 	// Executing command list and waiting for full execution
-	m_Renderer->GetCmdQueue()->ExecuteCmdList(loadContentCmdList); // TODO renderer should not need to be exposed to the derived application
-
-	m_Renderer->GetCmdQueue()->Flush(); // TODO renderer should not need to be exposed to the derived application
 
 	// Create a mesh and assign it to a new world entity
 
@@ -67,7 +63,7 @@ void DynBufExampleApp::OnInitializeContent()
 
 	// Creating the buffer for the model matrix
 	m_ModelMatrix = Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0));
-	m_MeshMvpBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_TYPE::DYNAMIC, sizeof(m_MvpMatrix));
+	m_MeshMvpBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(m_MvpMatrix));
 
 	const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
 	const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
@@ -85,7 +81,7 @@ void DynBufExampleApp::OnInitializeContent()
 	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("mvp"), m_MeshMvpBuffer.get());
 
 	// Creating buffer for the color mod
-	m_ColorModBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_TYPE::DYNAMIC, sizeof(float));
+	m_ColorModBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(float));
 	float colorMod = .5f;
 	m_ColorModBuffer->SetData(&colorMod, sizeof(float));
 	// Setting the relative shader parameter

@@ -11,10 +11,15 @@
 
 namespace Mox { 
 
-	StaticRangeAllocator::StaticRangeAllocator(uint32_t InStartingOffset, uint32_t InPoolSize)
+	RangeAllocator::RangeAllocator(uint32_t InStartingOffset, uint32_t InPoolSize)
+		: m_StartingOffset(InStartingOffset), m_PoolSize(InPoolSize)
 	{
-		m_StartingOffset = InStartingOffset;
-		m_PoolSize = InPoolSize;
+
+	}
+
+	StaticRangeAllocator::StaticRangeAllocator(uint32_t InStartingOffset, uint32_t InPoolSize)
+		: RangeAllocator(InStartingOffset, InPoolSize)
+	{
 		// Adding the initial free allocated range
 		FreeAllocatedRange(m_StartingOffset, InPoolSize);
 	}
@@ -94,11 +99,10 @@ namespace Mox {
 	}
 
 	LinearRangeAllocator::LinearRangeAllocator(uint32_t InStartingOffset, uint32_t InPoolSize)
+		: RangeAllocator(InStartingOffset, InPoolSize)
 	{
-		m_StartingOffset = InStartingOffset;
 		m_CurrentOffset = InStartingOffset;
 		m_AllocationLimit = InStartingOffset + InPoolSize;
-		m_PoolSize = InPoolSize;
 	}
 
 	LinearRangeAllocator::~LinearRangeAllocator() = default;
@@ -121,5 +125,6 @@ namespace Mox {
 
 		m_AllocationLimit = m_StartingOffset + std::trunc(m_PoolSize * InEndPercentage);
 	}
+
 
 }

@@ -25,9 +25,10 @@ namespace Mox {
 	}
 
 
-	void RequestResourceForBuffer(Buffer& InBuffer)
+	void RequestBufferResourceForHolder(Mox::BufferResourceHolder& InHolder)
 	{
-		GetSimThreadUpdatesForRenderer().m_BufferResourceRequests.emplace_back(InBuffer, InBuffer.GetType(), InBuffer.GetSize());
+		GetSimThreadUpdatesForRenderer().m_BufferResourceRequests.emplace_back(InHolder, 
+			InHolder.GetContentType(), InHolder.GetAllocType(), InHolder.GetSize(), InHolder.GetStride());
 	}
 
 	void ReleaseResourceForBuffer(Buffer& InBuffer)
@@ -45,9 +46,16 @@ namespace Mox {
 		// TODO
 	}
 
-	void UpdateConstantBufferValue(Buffer& InBuffer, const void* InData, uint32_t InSize)
+	void UpdateConstantBufferValue(Mox::BufferResourceHolder& InBufferHolder, const void* InData, uint32_t InSize)
 	{
-		GetSimThreadUpdatesForRenderer().m_ConstantUpdates.emplace_back(InBuffer, InData, InSize);
+		if (InBufferHolder.GetAllocType() == BUFFER_ALLOC_TYPE::DYNAMIC)
+		{
+			GetSimThreadUpdatesForRenderer().m_DynamicBufferUpdates.emplace_back(InBufferHolder, InData, InSize);
+		}
+		else // STATIC
+		{
+			GetSimThreadUpdatesForRenderer().m_StaticBufferUpdates.emplace_back(InBufferHolder, InData, InSize);
+		}
 	}
 
 	void EnableDebugLayer()
@@ -60,14 +68,14 @@ namespace Mox {
 		return GraphicsAllocator::Get()->AllocateDynamicBuffer(InSize);
 	}
 
-	Mox::VertexBufferView& AllocateVertexBufferView(Mox::VertexBuffer& InVB)
+	Mox::VertexBufferView& AllocateVertexBufferView(Mox::BufferResource& InVBResource)
 {
-		return GraphicsAllocator::Get()->AllocateVertexBufferView(InVB);
+		return GraphicsAllocator::Get()->AllocateVertexBufferView(InVBResource);
 	}
 
-	Mox::IndexBufferView& AllocateIndexBufferView(Mox::IndexBuffer& InIB, Mox::BUFFER_FORMAT InFormat)
+	Mox::IndexBufferView& AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum)
 {
-		return GraphicsAllocator::Get()->AllocateIndexBufferView(InIB, InFormat);
+		return GraphicsAllocator::Get()->AllocateIndexBufferView(InIB, InFormat, InElementsNum);
 	}
 
 	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource)

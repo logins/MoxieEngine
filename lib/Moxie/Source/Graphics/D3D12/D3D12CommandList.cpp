@@ -24,15 +24,21 @@ namespace Mox {
 	{
 	}
 
-	void D3D12CommandList::ResourceBarrier(Mox::Resource& InResource, Mox::RESOURCE_STATE InPrevState, Mox::RESOURCE_STATE InAfterState)
+	void D3D12CommandList::ResourceBarriers(const TransitionInfoVector& InTransitions)
 	{
-		CD3DX12_RESOURCE_BARRIER transitionBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			static_cast<Mox::D3D12Resource&>(InResource).GetInner().Get(),
-			// We can be sure that the previous state was present because in this application all the render targets
-			// are first filled and then presented to the main window repetitevely.
-			Mox::ResourceStateTypeToD3D12(InPrevState), Mox::ResourceStateTypeToD3D12(InAfterState));
+		std::vector<D3D12_RESOURCE_BARRIER> transitionBarriers; transitionBarriers.reserve(InTransitions.size());
+		Mox::Resource* targetResource; Mox::RESOURCE_STATE beforeState; Mox::RESOURCE_STATE afterState;
+		for (const auto& curTransition : InTransitions)
+		{
+			auto [targetResource, beforeState, afterState] = curTransition;
+			transitionBarriers.emplace_back(
+				CD3DX12_RESOURCE_BARRIER::Transition(
+					static_cast<Mox::D3D12Resource*>(targetResource)->GetInner().Get(),
+					Mox::ResStateTypeToD3D12(beforeState), Mox::ResStateTypeToD3D12(afterState))
+			);
+		}
 
-		m_D3D12CmdList->ResourceBarrier(1, &transitionBarrier);
+		m_D3D12CmdList->ResourceBarrier(transitionBarriers.size(), static_cast<D3D12_RESOURCE_BARRIER*>(transitionBarriers.data()));
 	}
 
 	void D3D12CommandList::ClearRTV(Mox::CpuDescHandle& InDescHandle, float* InColor)

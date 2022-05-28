@@ -53,8 +53,6 @@ void RenderThread::RenderMainView()
 
 	Mox::CommandList& cmdList = m_CmdQueue->GetAvailableCommandList();
 
-	Mox::GraphicsAllocator::Get()->OnStartRenderMainView(cmdList);
-
 	// Clear render target and depth stencil
 	m_MainWindow->ClearRtAndDs(cmdList);
 	ContextView& mainView = m_ContextViews.front();
@@ -77,7 +75,9 @@ void RenderThread::RenderMainView()
 
 	// Execute command list and present current render target from the main window
 	{
-		cmdList.ResourceBarrier(backBuffer, RESOURCE_STATE::RENDER_TARGET, RESOURCE_STATE::PRESENT);
+		cmdList.ResourceBarriers(TransitionInfoVector{ 
+			{&backBuffer, RESOURCE_STATE::RENDER_TARGET, RESOURCE_STATE::PRESENT} 
+			});
 
 		// Mandatory for the command list to close before getting executed by the command queue
 		m_CmdQueue->ExecuteCmdList(cmdList);
@@ -197,11 +197,23 @@ void RenderThread::ProcessRenderUpdates()
 	}
 
 	// Update constant buffer values
-	for (ConstantBufferUpdate& constUpdate : m_RenderUpdatesToProcess.m_ConstantUpdates)
+	for (BufferResourceUpdate& constUpdate : m_RenderUpdatesToProcess.m_DynamicBufferUpdates)
 	{
 		constUpdate.ApplyUpdate();
+
 	}
 
+	if (m_RenderUpdatesToProcess.m_StaticBufferUpdates.size() > 0)
+	{
+		// Update static resources
+		Mox::CommandList& loadContentCmdList = GetCmdQueue()->GetAvailableCommandList();
+
+		Mox::GraphicsAllocator::Get()->UpdateStaticResources(loadContentCmdList, m_RenderUpdatesToProcess.m_StaticBufferUpdates);
+
+		GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
+
+		GetCmdQueue()->Flush();
+	}
 
 	m_RenderUpdatesToProcess = Mox::FrameRenderUpdates();
 }

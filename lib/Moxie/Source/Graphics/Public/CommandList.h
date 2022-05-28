@@ -17,6 +17,8 @@ namespace Mox {
 	class PipelineState;
 	class Window;
 
+	using TransitionInfoVector = std::vector<std::tuple<Mox::Resource*, Mox::RESOURCE_STATE, Mox::RESOURCE_STATE>>;
+
 	class CommandList
 	{
 	public:
@@ -25,8 +27,7 @@ namespace Mox {
 
 		virtual void Close() = 0;
 
-		virtual void ResourceBarrier(Mox::Resource& InResource,
-			Mox::RESOURCE_STATE InPrevState, Mox::RESOURCE_STATE InAfterState) = 0;
+		virtual void ResourceBarriers(const TransitionInfoVector& InTransitions) = 0;
 
 		virtual void ClearRTV(Mox::CpuDescHandle& InDescHandle, float* InColor) = 0;
 		
@@ -70,6 +71,7 @@ namespace Mox {
 
 		// Internally calls ::UpdateSubresources(..) where IntermediateBuffer is expected to be allocated in upload heap
 		virtual void UploadBufferData(Mox::BufferResource& DestinationBuffer, Mox::BufferResource& IntermediateBuffer, const void* InBufferData, size_t InDataSize) = 0;
+
 
 	protected:
 		CommandList(Mox::Device& InDevice);

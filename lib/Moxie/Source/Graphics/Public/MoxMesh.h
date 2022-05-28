@@ -31,7 +31,7 @@ struct MeshCreationInfo
 class Mesh
 {
 public:
-	Mesh(const Mox::VertexBuffer& InVertexBuffer, const Mox::IndexBuffer& InIndexBuffer, 
+	Mesh(Mox::VertexBuffer& InVertexBuffer, Mox::IndexBuffer& InIndexBuffer, 
 		const std::vector<std::tuple<Mox::SpHash, Mox::Buffer*>>& InShaderParams);
 
 	void SetShaderParamValue(Mox::SpHash InHash, Mox::Buffer* InBuffer);
@@ -40,8 +40,8 @@ public:
 	Mox::Matrix4f m_ModelMatrix;
 
 	// Vertex and Index data
-	Mox::VertexBufferView& m_VertexBufferView;
-	Mox::IndexBufferView& m_IndexBufferView;
+	Mox::VertexBuffer& m_VertexBuffer;
+	Mox::IndexBuffer& m_IndexBuffer;
 
 
 	// Shader parameter hash -> Buffer

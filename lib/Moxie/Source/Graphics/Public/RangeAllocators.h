@@ -25,7 +25,7 @@ namespace Mox {
 	protected:
 		RangeAllocator() = default;
 
-		uint32_t m_StartingOffset, m_PoolSize;
+		uint32_t m_StartingOffset, m_PoolSize, m_Alignment;
 	};
 
 	class StaticRangeAllocator : public Mox::RangeAllocator

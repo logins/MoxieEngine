@@ -108,13 +108,13 @@ namespace Mox {
 
 		Check(mvpParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the MVP shader param value for this mesh
 
-		resourceEntries.emplace_back(0, mvpParamValue->second->GetResource()->GetView());
+		resourceEntries.emplace_back(0, static_cast<Mox::ConstantBufferView*>(mvpParamValue->second->GetResource()->GetView()));
 
 		std::unordered_map<Mox::SpHash, Mox::Buffer*>::const_iterator cModParamValue = InMesh.m_ShaderParameters.find(SPH_c_mod);
 
 		Check(cModParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the c_mod shader param value for this mesh
 
-		resourceEntries.emplace_back(1, cModParamValue->second->GetResource()->GetView());
+		resourceEntries.emplace_back(1, static_cast<Mox::ConstantBufferView*>(cModParamValue->second->GetResource()->GetView()));
 
 		return std::move(resourceEntries);
 	}
@@ -128,9 +128,9 @@ namespace Mox {
 		{	
 			m_DrawCommands.emplace_back(
 
-				curMesh->m_VertexBufferView,
+				static_cast<Mox::VertexBufferView&>(*curMesh->m_VertexBuffer.GetResource()->GetView()),
 
-				curMesh->m_IndexBufferView,
+				static_cast<Mox::IndexBufferView&>(*curMesh->m_IndexBuffer.GetResource()->GetView()),
 
 				*m_PipelineState,
 
@@ -180,7 +180,7 @@ namespace Mox {
 
 			//InCmdList.ReferenceCBV(1, *std::get<1>(dc.m_ResourceEntries[1]));
 
-			InCmdList.DrawIndexed(dc.m_IndexBufferView.GetIB().GetElementsNum());
+			InCmdList.DrawIndexed(dc.m_IndexBufferView.GetElementsNum());
 		}
 
 	}

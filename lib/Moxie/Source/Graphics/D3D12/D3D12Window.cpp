@@ -244,7 +244,9 @@ namespace Mox
 		// Transitioning current backbuffer resource to render target state
 		// We can be sure that the previous state was present because in this application all the render targets
 		// are first filled and then presented to the main window repetitevely.
-		InCmdList.ResourceBarrier(m_BackBuffers[m_CurrentBackBufferIndex], RESOURCE_STATE::PRESENT, RESOURCE_STATE::RENDER_TARGET);
+		InCmdList.ResourceBarriers(TransitionInfoVector{ 
+			{&m_BackBuffers[m_CurrentBackBufferIndex], RESOURCE_STATE::PRESENT, RESOURCE_STATE::RENDER_TARGET} 
+			});
 
 		float clearColor[] = { .4f, .6f, .9f, 1.f };
 		InCmdList.ClearRTV(GetCurrentRTVDescriptorHandle(), clearColor);

@@ -8,16 +8,26 @@
 
 #include "MoxEntity.h"
 #include "MoxRenderProxy.h"
-#include "MoxMesh.h"
+#include "MoxDrawable.h"
+#include "MoxComponent.h"
 
 namespace Mox {
 
 
 Entity::Entity(const Mox::EntityCreationInfo& InInfo)
 {
-	Mox::RequestRenderProxyForEntity(*this, InInfo.m_MeshCreationInfo);
+	Mox::RequestRenderProxyForEntity(*this);
 }
 
+void Entity::AddComponent(std::unique_ptr<class Mox::Component> InComponent)
+{
+	InComponent->OnPossessedBy(*this);
+
+	m_Components.emplace_back(std::move(InComponent));
+}
+
+Entity::~Entity() = default;
+Entity::Entity(Entity&&) noexcept = default;
 
 void Entity::MultiplyModelMatrix(const Mox::Matrix4f& InNewModelMatrix)
 {

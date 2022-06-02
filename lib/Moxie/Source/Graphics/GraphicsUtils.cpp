@@ -13,7 +13,7 @@
 #endif
 #include "GraphicsAllocator.h"
 #include "PipelineState.h"
-#include "MoxMesh.h"
+#include "MoxDrawable.h"
 
 namespace Mox { 
 
@@ -31,19 +31,24 @@ namespace Mox {
 			InHolder.GetContentType(), InHolder.GetAllocType(), InHolder.GetSize(), InHolder.GetStride());
 	}
 
-	void ReleaseResourceForBuffer(Buffer& InBuffer)
+	void ReleaseResourceForBuffer(ConstantBuffer& InBuffer)
 	{
 		// TODO
 	}
 
-	void RequestRenderProxyForEntity(Entity& InEntity, const std::vector<struct MeshCreationInfo>& InInfo)
+	void RequestRenderProxyForEntity(Entity& InEntity)
 	{
-		GetSimThreadUpdatesForRenderer().m_ProxyRequests.emplace_back(InEntity, InInfo);
+		GetSimThreadUpdatesForRenderer().m_ProxyRequests.emplace_back(InEntity);
 	}
 
 	void ReleaseRenderProxyForEntity(Entity& InEntity)
 	{
 		// TODO
+	}
+
+	void RequestDrawable(const DrawableCreationInfo& InCreationInfo)
+	{
+		GetSimThreadUpdatesForRenderer().m_DrawableRequests.emplace_back(std::move(InCreationInfo));
 	}
 
 	void UpdateConstantBufferValue(Mox::BufferResourceHolder& InBufferHolder, const void* InData, uint32_t InSize)
@@ -104,8 +109,8 @@ namespace Mox {
 	}
 
 
-	RenderProxyRequest::RenderProxyRequest(Mox::Entity& InEntity, const std::vector<struct MeshCreationInfo>& InMeshInfo) 
-		: m_TargetEntity(&InEntity), m_MeshInfos(InMeshInfo)
+	RenderProxyRequest::RenderProxyRequest(Mox::Entity& InEntity) 
+		: m_TargetEntity(&InEntity)
 	{
 
 	}

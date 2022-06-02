@@ -14,7 +14,7 @@ namespace Mox {
 	struct VertexBufferView;
 	struct IndexBufferView;
 	struct ConstantBufferView;
-	class Mesh;
+	class Drawable;
 
 	/*
 		RenderProxy: Render thread representation of a Mox::Entity in a Mox::World.
@@ -23,10 +23,14 @@ namespace Mox {
 	class RenderProxy
 	{
 	public:
-		RenderProxy(const std::vector<Mox::Mesh*> InMeshes);
+		RenderProxy();
 
+		~RenderProxy();
+		RenderProxy(RenderProxy&&) noexcept;
 
-		std::vector<Mox::Mesh*> m_Meshes;
+		void AddDrawable(Mox::Drawable* InDrawable) { m_Meshes.push_back(InDrawable); }
+
+		std::vector<Mox::Drawable*> m_Meshes;
 	};
 
 }

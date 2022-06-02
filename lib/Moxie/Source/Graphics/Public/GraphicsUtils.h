@@ -75,16 +75,29 @@ namespace Mox {
 	{
 		Mox::Entity* m_TargetEntity;
 
-		std::vector<struct MeshCreationInfo> m_MeshInfos;
+		RenderProxyRequest(Mox::Entity& InEntity);
 
-		RenderProxyRequest(Mox::Entity& InEntity, const std::vector<struct MeshCreationInfo>& InMeshInfo);
+	};
 
+	// Definition for the Shader Parameter Hash value type
+	using SpHash = uint64_t;
+
+	using MeshParamsList = std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>;
+
+	struct DrawableCreationInfo
+	{
+		Mox::Entity* m_OwningEntity;
+		Mox::VertexBuffer* m_VertexBuffer;
+		Mox::IndexBuffer* m_IndexBuffer;
+		MeshParamsList m_ShaderParameters;
 	};
 
 	// Used by the simulation thread to transfer object changes to the render thread
 	struct FrameRenderUpdates
 	{
 		std::vector<Mox::RenderProxyRequest> m_ProxyRequests;
+
+		std::vector<Mox::DrawableCreationInfo> m_DrawableRequests;
 
 		std::vector<Mox::BufferResourceRequest> m_BufferResourceRequests;
 
@@ -100,11 +113,13 @@ namespace Mox {
 	// Stores a request of creating a buffer resource for the given buffer
 	void RequestBufferResourceForHolder(Mox::BufferResourceHolder& InHolder);
 	// Stores a request of releasing the buffer resource associated with the given buffer
-	void ReleaseResourceForBuffer(Mox::Buffer& InBuffer);
+	void ReleaseResourceForBuffer(Mox::ConstantBuffer& InBuffer);
 
-	void RequestRenderProxyForEntity(Mox::Entity& InEntity, const std::vector<struct MeshCreationInfo>& InInfo);
+	void RequestRenderProxyForEntity(Mox::Entity& InEntity);
 
 	void ReleaseRenderProxyForEntity(Mox::Entity& InEntity);
+
+	void RequestDrawable(const DrawableCreationInfo& InCreationInfo);
 
 	void UpdateConstantBufferValue(Mox::BufferResourceHolder& InBufferHolder, const void* InData, uint32_t InSize);
 
@@ -127,8 +142,7 @@ namespace Mox {
 
 	std::unique_ptr<ViewPort> AllocateViewport(float InTopLeftX, float InTopLeftY, float InWidth, float InHeight);
 
-	// Definition for the Shader Parameter Hash value type
-	using SpHash = uint64_t;
+
 
 	// ----- SHADER PARAMETER HASHING -----
 // At the moment shader parameter hashing is implemented as FNV-1a from https://gist.github.com/hwei/1950649d523afd03285c

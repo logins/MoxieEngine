@@ -13,6 +13,8 @@
 
 namespace Mox {
 
+	BufferResourceHolder::~BufferResourceHolder() = default;
+
 	void BufferResourceHolder::SetData(const void* InData, uint32_t InSize)
 	{
 		Mox::UpdateConstantBufferValue(*this, InData, InSize);
@@ -86,13 +88,13 @@ namespace Mox {
 		m_DefaultView->RebuildResourceReference();
 	}
 
-	Buffer::Buffer(Mox::BUFFER_ALLOC_TYPE InType, uint32_t InSize)
+	ConstantBuffer::ConstantBuffer(Mox::BUFFER_ALLOC_TYPE InType, uint32_t InSize)
 		: BufferResourceHolder(Mox::RES_CONTENT_TYPE::CONSTANT, InType, InSize)
 	{
 		Mox::RequestBufferResourceForHolder(*this);
 	}
 
-	Buffer::~Buffer()
+	ConstantBuffer::~ConstantBuffer()
 	{
 		Mox::ReleaseResourceForBuffer(*this);
 	}

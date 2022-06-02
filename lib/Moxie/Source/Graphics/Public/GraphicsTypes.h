@@ -238,6 +238,7 @@ class BufferResourceHolder
 public:
 	BufferResourceHolder(Mox::RES_CONTENT_TYPE InContentType, Mox::BUFFER_ALLOC_TYPE InAllocType, uint32_t InSize, uint32_t InStride = 0)
 		: m_ContentType(InContentType), m_BufferType(InAllocType), m_Size(InSize), m_Stride(InStride) { }
+	~BufferResourceHolder();
 	// Setting the buffer resource needs to happen in the render thread
 	// This will also allow for the creation of 
 	virtual void SetBufferResource(Mox::BufferResource& InResource) = 0;
@@ -290,20 +291,20 @@ struct ConstantBufferView;
 // Representation of a graphics buffer resource owned by the main thread.
 // This internally holds a BufferResource which is the effective graphics 
 // resource handled by the render thread.
-class Buffer : public BufferResourceHolder
+class ConstantBuffer : public BufferResourceHolder
 {
 public:
-	Buffer(Mox::BUFFER_ALLOC_TYPE InType, uint32_t InSize);
-	~Buffer();
+	ConstantBuffer(Mox::BUFFER_ALLOC_TYPE InType, uint32_t InSize);
+	virtual ~ConstantBuffer();
 
 	// Note: resource is meant to be accessed only by the render thread
 	inline void SetBufferResource(BufferResource& InResource) override { m_Resource = &InResource; }
 
 
 	// A buffer needs to be unique in its data and cannot be copied
-	Buffer& operator=(const Buffer&) = delete;
-	Buffer(const Buffer&) = delete;
-	Buffer() = delete;
+	ConstantBuffer& operator=(const ConstantBuffer&) = delete;
+	ConstantBuffer(const ConstantBuffer&) = delete;
+	ConstantBuffer() = delete;
 };
 
 struct Texture {

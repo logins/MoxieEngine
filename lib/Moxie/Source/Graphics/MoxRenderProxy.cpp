@@ -12,9 +12,11 @@ namespace Mox {
 
 
 
-	RenderProxy::RenderProxy(const std::vector<Mox::Mesh*> InMeshes)
-		: m_Meshes(InMeshes)
-	{
-	}
+	RenderProxy::RenderProxy() = default;
+
+	RenderProxy::RenderProxy(RenderProxy&&) noexcept = default;
+
+	RenderProxy::~RenderProxy() = default;
+
 
 }

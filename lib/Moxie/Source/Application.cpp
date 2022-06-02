@@ -214,6 +214,7 @@ namespace Mox
 			MOVE_VEC(m_StagedRenderUpdates.m_DynamicBufferUpdates, newUpdates.m_DynamicBufferUpdates)
 			MOVE_VEC(m_StagedRenderUpdates.m_StaticBufferUpdates, newUpdates.m_StaticBufferUpdates)
 			MOVE_VEC(m_StagedRenderUpdates.m_ProxyRequests, newUpdates.m_ProxyRequests)
+			MOVE_VEC(m_StagedRenderUpdates.m_DrawableRequests, newUpdates.m_DrawableRequests)
 
 			Mox::GetSimThreadUpdatesForRenderer() = Mox::FrameRenderUpdates();
 

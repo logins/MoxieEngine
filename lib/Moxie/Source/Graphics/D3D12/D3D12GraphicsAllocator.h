@@ -24,7 +24,7 @@ namespace Mox {
 	class Window;
 	struct WindowInitInput;
 	class CommandQueue;
-	class Mesh;
+	class Drawable;
 
 class D3D12GraphicsAllocator : public Mox::GraphicsAllocatorBase
 {
@@ -86,10 +86,9 @@ public:
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) override;
 
 
-
-
-
 	std::vector<Mox::RenderProxy*> CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) override;
+
+	void CreateDrawables(const std::vector<Mox::DrawableCreationInfo>& InRequests) override;
 
 
 	void AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest) override;
@@ -108,7 +107,7 @@ private:
 	std::deque<Mox::BufferResource> m_BufferArray;
 	std::deque<std::unique_ptr<Mox::Texture>> m_TextureArray;
 
-	std::deque<std::unique_ptr<Mox::Mesh>> m_MeshArray;
+	std::deque<std::unique_ptr<Mox::Drawable>> m_DrawableArray;
 	std::deque<std::unique_ptr<Mox::RenderProxy>> m_RenderProxyArray;
 
 	std::deque<Mox::D3D12VertexBufferView> m_VertexViewArray;

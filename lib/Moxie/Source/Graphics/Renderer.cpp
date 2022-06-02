@@ -14,7 +14,7 @@
 #include "Graphics/Public/CommandList.h"
 #include "CpuProfiling.h"
 #include "Features/Public/RenderPass.h"
-#include "MoxMesh.h"
+#include "MoxDrawable.h"
 
 namespace Mox {
 
@@ -183,6 +183,9 @@ void RenderThread::ProcessRenderUpdates()
 
 	// Create proxies
 	std::vector<Mox::RenderProxy*> newProxies = GraphicsAllocator::Get()->CreateProxies(m_RenderUpdatesToProcess.m_ProxyRequests);
+
+	// Create Drawables
+	GraphicsAllocator::Get()->CreateDrawables(m_RenderUpdatesToProcess.m_DrawableRequests);
 
 	// Handling new render proxies
 	for (Mox::RenderProxy* newProxy : newProxies)

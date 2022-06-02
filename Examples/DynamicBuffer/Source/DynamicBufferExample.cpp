@@ -21,7 +21,8 @@
 #include "Simulator.h"
 #include "Renderer.h"
 #include "MoxEntity.h"
-#include "MoxMesh.h"
+#include "MoxDrawable.h"
+#include "MoxMeshComponent.h"
 
 
 #define PART3_SHADERS_PATH(NAME) LQUOTE(DYN_BUF_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
@@ -59,11 +60,11 @@ void DynBufExampleApp::OnInitializeContent()
 	// Create a mesh and assign it to a new world entity
 
 
-	std::vector<std::tuple<Mox::SpHash, Mox::Buffer*>> meshShaderParamDefinitions;
+	std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>> meshShaderParamDefinitions;
 
 	// Creating the buffer for the model matrix
 	m_ModelMatrix = Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0));
-	m_MeshMvpBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(m_MvpMatrix));
+	m_MeshMvpBuffer = std::make_unique<Mox::ConstantBuffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(m_MvpMatrix));
 
 	const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
 	const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
@@ -81,15 +82,19 @@ void DynBufExampleApp::OnInitializeContent()
 	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("mvp"), m_MeshMvpBuffer.get());
 
 	// Creating buffer for the color mod
-	m_ColorModBuffer = std::make_unique<Mox::Buffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(float));
+	m_ColorModBuffer = std::make_unique<Mox::ConstantBuffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(float));
 	float colorMod = .5f;
 	m_ColorModBuffer->SetData(&colorMod, sizeof(float));
 	// Setting the relative shader parameter
 	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("c_mod"), m_ColorModBuffer.get());
 
-	std::vector<Mox::MeshCreationInfo> meshCreationInfo{ {m_VertexBuffer, m_IndexBuffer, meshShaderParamDefinitions} };
+	m_CubeEntity = &AddEntity({ Mox::Vector3i(0,0,0) });
 
-	m_CubeEntity = &AddEntity({ Mox::Vector3i(0,0,0), meshCreationInfo });
+	std::unique_ptr<Mox::MeshComponent> cubeMesh = std::make_unique<Mox::MeshComponent>(
+		Mox::DrawableCreationInfo{ m_CubeEntity, m_VertexBuffer, m_IndexBuffer, std::move(meshShaderParamDefinitions)} );
+
+
+	m_CubeEntity->AddComponent(std::move(cubeMesh));
 
 	// Window events delegates
 	m_MainWindow->OnMouseMoveDelegate.Add<DynBufExampleApp, &DynBufExampleApp::OnMouseMove>(this);

@@ -21,6 +21,7 @@
 #include "MoxEntity.h"
 #include "MoxRenderProxy.h"
 #include "D3D12StaticBufferAllocator.h"
+#include "MoxDrawable.h"
 
 namespace Mox { 
 
@@ -196,16 +197,9 @@ namespace Mox {
 
 		for (const Mox::RenderProxyRequest& proxyRequest : InRequests)
 		{
-			// Create meshes
-			std::vector<Mox::Mesh*> newMeshes; newMeshes.reserve(proxyRequest.m_MeshInfos.size());
-			for (const Mox::MeshCreationInfo& meshInfo : proxyRequest.m_MeshInfos)
-			{
-				m_MeshArray.emplace_back(std::make_unique<Mox::Mesh>(*meshInfo.m_VertexBuffer, *meshInfo.m_IndexBuffer, meshInfo.m_ShaderParameters));
-				newMeshes.push_back(m_MeshArray.back().get());
-			}
 
 			// Create proxy
-			m_RenderProxyArray.emplace_back(std::make_unique<Mox::RenderProxy>(newMeshes));
+			m_RenderProxyArray.emplace_back(std::make_unique<Mox::RenderProxy>());
 
 			Mox::RenderProxy* newProxy = m_RenderProxyArray.back().get();
 			proxyRequest.m_TargetEntity->SetRenderProxy(newProxy);
@@ -213,6 +207,16 @@ namespace Mox {
 		}
 
 		return outProxies;
+	}
+
+	void D3D12GraphicsAllocator::CreateDrawables(const std::vector<Mox::DrawableCreationInfo>& InRequests)
+	{
+		for (const Mox::DrawableCreationInfo& drawableReq : InRequests)
+		{
+			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(*drawableReq.m_VertexBuffer, *drawableReq.m_IndexBuffer, drawableReq.m_ShaderParameters));
+			
+			drawableReq.m_OwningEntity->GetRenderProxy()->AddDrawable(m_DrawableArray.back().get());
+		}
 	}
 
 	Mox::VertexBuffer& D3D12GraphicsAllocator::AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize)

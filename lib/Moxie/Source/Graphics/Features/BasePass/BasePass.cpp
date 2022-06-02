@@ -12,7 +12,7 @@
 #include "PipelineState.h"
 #include "MoxRenderProxy.h"
 #include "CommandList.h"
-#include "MoxMesh.h"
+#include "MoxDrawable.h"
 #include "GraphicsAllocator.h"
 #include "MoxUtils.h"
 
@@ -96,7 +96,7 @@ namespace Mox {
 
 	}
 
-	std::vector<CbvEntry> GenerateResourceEntriesForMesh(const Mox::Mesh& InMesh)
+	std::vector<CbvEntry> GenerateResourceEntriesForMesh(const Mox::Drawable& InMesh)
 	{
 		std::vector<CbvEntry> resourceEntries;
 
@@ -104,13 +104,13 @@ namespace Mox {
 		// such as the root index and the size of data, is already known and expected by the pass.
 
 		// Note: we are assuming to find entries for relative parameters every time
-		std::unordered_map<Mox::SpHash, Mox::Buffer*>::const_iterator mvpParamValue = InMesh.m_ShaderParameters.find(SPH_mvp);
+		std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*>::const_iterator mvpParamValue = InMesh.m_ShaderParameters.find(SPH_mvp);
 
 		Check(mvpParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the MVP shader param value for this mesh
 
 		resourceEntries.emplace_back(0, static_cast<Mox::ConstantBufferView*>(mvpParamValue->second->GetResource()->GetView()));
 
-		std::unordered_map<Mox::SpHash, Mox::Buffer*>::const_iterator cModParamValue = InMesh.m_ShaderParameters.find(SPH_c_mod);
+		std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*>::const_iterator cModParamValue = InMesh.m_ShaderParameters.find(SPH_c_mod);
 
 		Check(cModParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the c_mod shader param value for this mesh
 
@@ -124,7 +124,7 @@ namespace Mox {
 		// Note: for now we assume the proxy is relevant for this pass
 
 		// Generate draw command from each mesh to later use it on draw
-		for (const Mox::Mesh* curMesh : InProxy.m_Meshes)
+		for (const Mox::Drawable* curMesh : InProxy.m_Meshes)
 		{	
 			m_DrawCommands.emplace_back(
 

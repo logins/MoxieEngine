@@ -40,9 +40,9 @@ private:
 	// Index buffer for the cube
 	Mox::IndexBuffer* m_IndexBuffer;
 	// Standalone Constant Buffer for the color modifier
-	std::unique_ptr<Mox::Buffer> m_ColorModBuffer;
+	std::unique_ptr<Mox::ConstantBuffer> m_ColorModBuffer;
 
-	std::unique_ptr<Mox::Buffer> m_MeshMvpBuffer;
+	std::unique_ptr<Mox::ConstantBuffer> m_MeshMvpBuffer;
 
 	Mox::PipelineState* m_PipelineState;
 

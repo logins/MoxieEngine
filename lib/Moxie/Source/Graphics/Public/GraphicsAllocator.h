@@ -20,6 +20,7 @@ namespace Mox {
 	struct WindowInitInput;
 	class CommandQueue;
 	class RenderProxy;
+	class Drawable;
 
 // This pure virtual class serves as interface for any Graphics Allocator we want to implement.
 // A graphics allocator is meant to handle the lifetime of graphics resources (buffers, textures and descriptors) 
@@ -82,7 +83,7 @@ public:
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) = 0;
 
 
-
+	virtual void CreateDrawables(const std::vector<Mox::DrawableCreationInfo>& InRequests) = 0;
 
 
 

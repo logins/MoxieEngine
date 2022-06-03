@@ -57,6 +57,14 @@ namespace Mox {
 
 		virtual void UpdateContent(float InDeltaTime) = 0;
 
+		// At the moment we don't have a camera system 
+		// so the application can have generic view and projection matrices.
+		inline Matrix4f GetViewMatrix() const { return m_ViewMatrix; }
+		inline float GetFovYRad() const { return m_FovYRad; }
+		inline Matrix4f GetProjectionMatrix() const { return m_ProjMatrix; }
+		// Precomputed product of view and projection
+		inline Matrix4f GetViewProjectionMatrix() const { return m_ViewProjMatrix; }
+
 
 		uint64_t GetCurrentFrameNumber();
 
@@ -113,6 +121,11 @@ namespace Mox {
 		// Note: m_StagedRenderUpdates is supposed to be accessed in a scope that is locked with the m_FramesMutex
 		Mox::FrameRenderUpdates m_StagedRenderUpdates;
 
+		Mox::Matrix4f m_ViewMatrix;
+		float m_FovYRad;
+		Mox::Matrix4f m_ProjMatrix;
+		Mox::Matrix4f m_ViewProjMatrix;
+
 	private:
 		Application(const Application&) = delete; // We do not want Application to be copiable
 		Application& operator=(const Application&) = delete; // We do not want Application to be copy assignable
@@ -126,6 +139,7 @@ namespace Mox {
 		float m_RenderFrameTime;
 
 		bool m_IsTerminating = false;
+
 	};
 }
 #endif // Application_h__

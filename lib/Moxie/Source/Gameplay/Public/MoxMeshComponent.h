@@ -25,13 +25,19 @@ public:
 
 	void OnPossessedBy(class Mox::Entity& InEntity) override;
 
+
+	void OnEntityTransformChanged(const Mox::Matrix4f& InNewModelMat) override;
+
 private:
 	Mox::VertexBuffer& m_VertexBuffer;
 	Mox::IndexBuffer& m_IndexBuffer;
 
 	MeshParamsList m_ShaderParameters;
 
-	Entity& m_OwnerEntity;
+	std::unique_ptr<Mox::ConstantBuffer> m_MvpBuffer;
+
+
+	Mox::Entity& m_OwnerEntity;
 
 	MeshComponent() = delete;
 };

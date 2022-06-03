@@ -42,19 +42,25 @@ public:
 
 	Mox::RenderProxy* GetRenderProxy() const { return m_RenderProxy; };
 
-	void MultiplyModelMatrix(const Mox::Matrix4f& InNewModelMatrix);
-
 	void SetRenderProxy(Mox::RenderProxy* InProxy) { m_RenderProxy = InProxy; }
 
+	inline Mox::Matrix4f GetModelMatrix() const { return m_WorldMatrix; }
+
+	void Rotate(float InAngleX, float InAngleY);
+
+	void Translate(Mox::Vector3i InTranslation);
+
+	void Scale(Mox::Vector3f InScale);
+
 private:
-	void OnRotation(const Mox::Vector3f& InAxis, float InAngle);
-	void OnTraslation(const Mox::Vector3f& InTraslation);
-	void OnScale(const Mox::Vector3f& InScale);
 
 	std::vector<std::unique_ptr<class Mox::Component>> m_Components;
 
+	Mox::Matrix4f m_WorldMatrix;
 
 	Mox::Vector3i m_WorldPos;
+	Mox::Vector3f m_WorldRot;
+	Mox::Vector3f m_WorldScale;
 
 	Mox::RenderProxy* m_RenderProxy;
 };

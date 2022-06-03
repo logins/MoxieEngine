@@ -78,6 +78,17 @@ namespace Mox
 
 		m_MainWindow->OnDestroyDelegate.Add<Application, &Application::OnMainWindowClose>(this);
 
+
+		const Eigen::Vector3f eyePosition = Eigen::Vector3f(0, 0, -10);
+		const Eigen::Vector3f focusPoint = Eigen::Vector3f(0, 0, 0);
+		const Eigen::Vector3f upDirection = Eigen::Vector3f(0, 1, 0);
+		m_ViewMatrix = Mox::LookAt(eyePosition, focusPoint, upDirection);
+		// z_min z_max aspect_ratio fov
+		m_FovYRad = 0.7853981634f; // 45 degrees in radians
+		m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, m_FovYRad);
+		// Note: We are working with column major matrices and vectors are columns, so it's: projection * view * model * point
+		m_ViewProjMatrix = m_ProjMatrix * m_ViewMatrix;
+
 		// Opportunity for the derived application to initialize both simulation and graphics
 		// TODO later this will have to be replaced with Simulator->Init and Renderer->Init, where they will both need to trigger callbacks for opportunity to initialize content
 		

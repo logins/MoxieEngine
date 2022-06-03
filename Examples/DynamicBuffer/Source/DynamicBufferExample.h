@@ -42,17 +42,11 @@ private:
 	// Standalone Constant Buffer for the color modifier
 	std::unique_ptr<Mox::ConstantBuffer> m_ColorModBuffer;
 
-	std::unique_ptr<Mox::ConstantBuffer> m_MeshMvpBuffer;
 
 	Mox::PipelineState* m_PipelineState;
 
 	Mox::Entity* m_CubeEntity;
 
-	Mox::Matrix4f m_MvpMatrix;
-	Mox::Matrix4f m_ModelMatrix;
-	Mox::Matrix4f m_ViewMatrix;
-	float m_FovYRad;
-	Mox::Matrix4f m_ProjMatrix;
 
 	// Vertex data for colored cube
 	struct VertexPosColor

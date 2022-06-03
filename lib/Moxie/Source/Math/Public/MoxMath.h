@@ -27,24 +27,30 @@
 
 namespace Mox {
 
+	// Example on how to use affine geometry can be found here
+	// https://eigen.tuxfamily.org/dox/group__TutorialGeometry.html
+
+	template<typename DataType, int RowsNum, int ColsNum>
+	using Matrix = typename Eigen::Matrix<DataType, RowsNum, ColsNum>;
+
 	using Matrix4f = Eigen::Matrix4f;
 
 	using Matrix3f = Eigen::Matrix3f;
 
-	using Vector3f = Eigen::Vector3f;
+	using Vector3f = Eigen::Matrix<float, 3, 1>;
 
 	using Vector2f = Eigen::Vector2f;
 
 	using Vector3i = Eigen::Vector3i;
 
-		template<typename DataType, int RowsNum, int ColsNum>
-		using Matrix = typename Eigen::Matrix<DataType, RowsNum, ColsNum>;
 
-		template<typename DataType, int Dim>
-		using ProjectiveTransform = typename Eigen::Transform<DataType, Dim, Eigen::Projective>;
-		template<typename DataType, int Dim>
-		using AffineTransform = typename Eigen::Transform<DataType, Dim, Eigen::Affine>;
+	template<typename DataType, int Dim>
+	using ProjectiveTransform = typename Eigen::Transform<DataType, Dim, Eigen::Projective>;
+	template<typename DataType, int Dim>
+	using AffineTransform = typename Eigen::Transform<DataType, Dim, Eigen::Affine>;
 
+	using Affine3f = AffineTransform<float, 3>;
+	using Affine4f = AffineTransform<float, 4>;
 		
 
 		// Note: InAlignmentUnit must be a power of two!

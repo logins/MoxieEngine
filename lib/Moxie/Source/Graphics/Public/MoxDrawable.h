@@ -36,7 +36,6 @@ public:
 
 
 	// Translation, Rotation and Scale
-	Mox::Matrix4f m_ModelMatrix;
 
 	// Vertex and Index data
 	Mox::VertexBuffer& m_VertexBuffer;

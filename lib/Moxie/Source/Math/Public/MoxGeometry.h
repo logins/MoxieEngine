@@ -21,7 +21,7 @@ namespace Mox {
 
 	Mox::Matrix4f LookAt(const Mox::Vector3f& InEye, const Mox::Vector3f& InCenter, const Mox::Vector3f& InUp);
 
-	Mox::Matrix4f ModelMatrix(const Vector3i& InPosition, const Vector3f& InScale, const Vector3f& InAngleRotation);
+	Mox::Matrix4f ModelMatrix(const Vector3f& InPosition, const Vector3f& InScale, const Vector3f& InAngleRotation);
 
 }
 #endif // Geometry_h__

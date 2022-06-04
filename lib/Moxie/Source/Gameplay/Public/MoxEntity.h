@@ -19,7 +19,7 @@ class Component;
 
 // Defines all the possible input parameters for the creation of an entity
 struct EntityCreationInfo {
-	Mox::Vector3i WorldPosition;
+	Mox::Vector3f WorldPosition;
 
 };
 
@@ -48,19 +48,21 @@ public:
 
 	void Rotate(float InAngleX, float InAngleY);
 
-	void Translate(Mox::Vector3i InTranslation);
+	void Translate(float InX, float InY, float InZ);
 
-	void Scale(Mox::Vector3f InScale);
+	void SetScale(float InX, float InY, float InZ);
 
 private:
+
+	void OnTransformChanged();
 
 	std::vector<std::unique_ptr<class Mox::Component>> m_Components;
 
 	Mox::Matrix4f m_WorldMatrix;
 
-	Mox::Vector3i m_WorldPos;
-	Mox::Vector3f m_WorldRot;
-	Mox::Vector3f m_WorldScale;
+	Mox::Vector3f m_WorldPos;
+	Mox::Matrix3f m_WorldRot;
+	Mox::Matrix3f m_WorldScale;
 
 	Mox::RenderProxy* m_RenderProxy;
 };

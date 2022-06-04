@@ -16,7 +16,8 @@ namespace Mox {
 
 
 Entity::Entity(const Mox::EntityCreationInfo& InInfo)
-	: m_WorldMatrix(Mox::ModelMatrix(InInfo.WorldPosition, Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0)))
+	: m_WorldMatrix(Mox::ModelMatrix(InInfo.WorldPosition, Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0))),
+	m_WorldPos(InInfo.WorldPosition),m_WorldScale(Mox::Matrix3f::Identity()),m_WorldRot(Mox::Matrix3f::Identity())
 {
 	Mox::RequestRenderProxyForEntity(*this);
 }
@@ -33,26 +34,51 @@ Entity::Entity(Entity&&) noexcept = default;
 
 void Entity::Rotate(float InAngleX, float InAngleY)
 {
-	m_WorldRot[0] = std::fmod(m_WorldRot[0] + InAngleX, 360.f);
-	m_WorldRot[1] = std::fmod(m_WorldRot[1] + InAngleX, 360.f);
 
 	Mox::Affine3f rotationTransform = Mox::Affine3f::Identity();
 	rotationTransform
 		.rotate(Mox::AngleAxisf(InAngleY, Mox::Vector3f::UnitX()))
 		.rotate(Mox::AngleAxisf(InAngleX, Mox::Vector3f::UnitY()));
 
-	m_WorldMatrix.topLeftCorner<3, 3>() *= rotationTransform.linear();
+	m_WorldRot = rotationTransform.linear() * m_WorldRot;
 
+	// Note: Order of rotations is important (and not commutative). 
+	// Multiplication goes from right to left (because transforming points in form of column vectors) and 
+	// we always want to start from the previous rotation and adding the new rotation on top of it.
+	m_WorldMatrix.topLeftCorner<3, 3>() = m_WorldRot;
+
+	// Re-apply scale
+	m_WorldMatrix.topLeftCorner<3, 3>() *= m_WorldScale;
+
+	OnTransformChanged();
+}
+
+void Entity::Translate(float InX, float InY, float InZ)
+{
+	m_WorldPos += Mox::Vector3f(InX, InY, InZ);
+
+	m_WorldMatrix.topRightCorner<3, 1>() = m_WorldPos;
+
+	OnTransformChanged();
+}
+
+void Entity::SetScale(float InX, float InY, float InZ)
+{
+	m_WorldScale.diagonal() = Mox::Vector3f(InX, InY, InZ);
+
+	m_WorldMatrix.topLeftCorner<3, 3>() = m_WorldRot;
+
+	m_WorldMatrix.topLeftCorner<3, 3>() *= m_WorldScale;
+
+	OnTransformChanged();
+}
+
+void Entity::OnTransformChanged()
+{
 	for (std::unique_ptr<class Mox::Component>& curComponent : m_Components)
 	{
 		curComponent->OnEntityTransformChanged(m_WorldMatrix);
 	}
-
 }
-
-//Mox::Matrix4f& Entity::GetModelMatrix()
-//{
-//	return 
-//}
 
 }

@@ -77,7 +77,7 @@ void DynBufExampleApp::OnInitializeContent()
 	// Setting the relative shader parameter
 	meshShaderParamDefinitions.emplace_back(Mox::HashSpName("c_mod"), m_ColorModBuffer.get());
 
-	m_CubeEntity = &AddEntity({ Mox::Vector3i(0,0,0) });
+	m_CubeEntity = &AddEntity({ Mox::Vector3f::Zero() });
 
 	std::unique_ptr<Mox::MeshComponent> cubeMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{ m_CubeEntity, m_VertexBuffer, m_IndexBuffer, std::move(meshShaderParamDefinitions)} );
@@ -101,15 +101,11 @@ void DynBufExampleApp::OnQuitApplication()
 
 void DynBufExampleApp::OnMouseWheel(float InDeltaRot)
 {
-	// TODO this needs to be passed by message to the renderer
-	float newFovYRad = std::max(0.2094395102f, std::min(m_FovYRad -= InDeltaRot / 1200.f, 1.570796327f)); // clamping
+	static float curScale = 1.0f;
+	curScale = std::clamp<float>(curScale + (InDeltaRot > 0 ? 0.4f : -0.4f), 0.1f, 3.f);
+	m_CubeEntity->SetScale(curScale, 1.0, 1.0);
 
-	//char buffer[256];
-	//::sprintf_s(buffer, "Fov: %f\n", m_Fov);
-	//::OutputDebugStringA(buffer);
 
-	// z_min z_max aspect_ratio fov
-	m_ProjMatrix = Mox::Perspective(0.1f, 100.f, 1.3333f, newFovYRad);
 }
 
 void DynBufExampleApp::OnMouseMove(int32_t InX, int32_t InY)
@@ -128,17 +124,11 @@ void DynBufExampleApp::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 	m_CubeEntity->Rotate(
 		-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()),
 		-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()));
-
-	//m_CubeEntity->MultiplyModelMatrix(tr.matrix()); // TODO implement and use entity rotation here
 }
 
 void DynBufExampleApp::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	Eigen::Transform<float, 3, Eigen::Affine> tr;  // TODO use part of the model matrix for translation instead of creating a new one!
-	tr.setIdentity();
-	tr.translate(Eigen::Vector3f(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0));
-
-	//m_CubeEntity->MultiplyModelMatrix(tr.matrix()); // TODO implement and use entity traslation here
+	m_CubeEntity->Translate(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0.f);
 }
 
 void DynBufExampleApp::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)

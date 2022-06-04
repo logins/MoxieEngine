@@ -81,7 +81,7 @@ namespace Mox {
 	// https://stackoverflow.com/questions/115703/storing-c-template-function-definitions-in-a-cpp-file
 	// The downside is that we need to instantiate the template for each type we need.
 
-	Mox::Matrix4f ModelMatrix(const Vector3i& InPosition, const Vector3f& InScale, const Vector3f& InAngleRotation)
+	Mox::Matrix4f ModelMatrix(const Vector3f& InPosition, const Vector3f& InScale, const Vector3f& InAngleRotation)
 	{
 		// Generate Rotation matrix
 		// Good article about rotation matrix https://www.continuummechanics.org/rotationmatrix.html

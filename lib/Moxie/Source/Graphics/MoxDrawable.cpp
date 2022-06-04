@@ -15,7 +15,6 @@ namespace Mox {
 Drawable::Drawable(Mox::VertexBuffer& InVertexBuffer, Mox::IndexBuffer& InIndexBuffer,
 	const std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>& InShaderParams)
 	: m_VertexBuffer(InVertexBuffer), m_IndexBuffer(InIndexBuffer),
-	m_ModelMatrix(Mox::ModelMatrix(Mox::Vector3i(0, 0, 0), Mox::Vector3f(1,1,1), Mox::Vector3f(0,0,0))),
 	m_Material(Mox::Material::DefaultMaterial)
 {
 	

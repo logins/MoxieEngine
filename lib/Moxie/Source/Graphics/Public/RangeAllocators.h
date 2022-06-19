@@ -20,7 +20,7 @@ namespace Mox {
 		virtual ~RangeAllocator() = default;
 
 		// Returns the offset of the range
-		virtual uint32_t AllocateRange(uint32_t InRangeSize) = 0;
+		virtual size_t AllocateRange(size_t InRangeSize) = 0;
 		virtual void FreeAllocatedRange(uint32_t InStartingIndex, uint32_t InRangeSize) = 0;
 	protected:
 		RangeAllocator() = default;
@@ -35,7 +35,8 @@ namespace Mox {
 
 		virtual ~StaticRangeAllocator() override;
 
-		virtual uint32_t AllocateRange(uint32_t InRangeSize);
+		// Returns the relative offset for the allocation
+		virtual size_t AllocateRange(size_t InRangeSize);
 
 		virtual void FreeAllocatedRange(uint32_t InRangeOffset, uint32_t InRangeSize);
 protected:
@@ -75,7 +76,7 @@ private:
 
 		virtual ~LinearRangeAllocator() override;
 
-		virtual uint32_t AllocateRange(uint32_t InRangeSize);
+		size_t AllocateRange(size_t InRangeSize) override;
 
 		// Trying to free a range in a DynamicRangeAllocator will do nothing at the moment, since this is a circular allocator
 		// and all the allocations are executed in a linear manner, so it would not make sense to free a specific range...

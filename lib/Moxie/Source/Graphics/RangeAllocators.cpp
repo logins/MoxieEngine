@@ -26,7 +26,7 @@ namespace Mox {
 
 	StaticRangeAllocator::~StaticRangeAllocator() = default;
 
-	uint32_t StaticRangeAllocator::AllocateRange(uint32_t InRangeSize)
+	size_t StaticRangeAllocator::AllocateRange(size_t InRangeSize)
 	{
 		// Find a range big enough to contain the range
 		auto freeRangesIt = m_FreeRangesBySize.lower_bound(InRangeSize); //lower_bound returns an iterator with the first element Not less than the given key
@@ -107,7 +107,7 @@ namespace Mox {
 
 	LinearRangeAllocator::~LinearRangeAllocator() = default;
 
-	uint32_t LinearRangeAllocator::AllocateRange(uint32_t InRangeSize)
+	size_t LinearRangeAllocator::AllocateRange(size_t InRangeSize)
 	{
 		m_CurrentOffset += InRangeSize;
 		

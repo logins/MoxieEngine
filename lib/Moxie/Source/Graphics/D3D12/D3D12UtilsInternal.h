@@ -31,9 +31,9 @@ namespace Mox {
 
 	Mox::BUFFER_FORMAT BufferFormatToEngine(DXGI_FORMAT InFormat);
 
-	DirectX::TEX_DIMENSION TextureTypeToD3D12(Mox::TEXTURE_TYPE InFormat);
+	D3D12_RESOURCE_DIMENSION TextureTypeToD3D12(Mox::TEXTURE_TYPE InFormat);
 
-	Mox::TEXTURE_TYPE TextureTypeToEngine(DirectX::TEX_DIMENSION InFormat);
+	Mox::TEXTURE_TYPE TextureTypeToEngine(D3D12_RESOURCE_DIMENSION InFormat);
 
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyTypeToD3D12(Mox::PRIMITIVE_TOPOLOGY_TYPE InPrimitiveTopologyType);
 

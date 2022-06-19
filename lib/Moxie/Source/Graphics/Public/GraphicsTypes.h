@@ -93,7 +93,7 @@ struct GPUVirtualAddress {
 	bool IsValid = false;
 };
 
-enum class BUFFER_FORMAT : int {
+enum class BUFFER_FORMAT : uint8_t {
 	R16_UINT, // Single channel 16 bits
 	R32G32B32_FLOAT,
 	R8G8B8A8_UNORM,
@@ -101,18 +101,18 @@ enum class BUFFER_FORMAT : int {
 	BC1_UNORM
 };
 
-enum class TEXTURE_FILE_FORMAT : int {
+enum class TEXTURE_FILE_FORMAT : uint8_t {
 	DDS,
 	PNG,
 	JPG
 };
 
-enum class RESOURCE_HEAP_TYPE : int {
+enum class RESOURCE_HEAP_TYPE : uint8_t {
 	DEFAULT = 0,
 	UPLOAD = 1
 };
 
-enum class RESOURCE_STATE : int {
+enum class RESOURCE_STATE : uint8_t {
 	PRESENT = 0,
 	RENDER_TARGET,
 	COPY_SOURCE,
@@ -120,7 +120,7 @@ enum class RESOURCE_STATE : int {
 	GEN_READ
 };
 
-enum class TEXTURE_TYPE : int {
+enum class TEXTURE_TYPE : uint8_t {
 	TEX_1D,
 	TEX_2D,
 	TEX_CUBE,
@@ -134,22 +134,17 @@ A Resource can either be a buffer or a texture (and their specifications)
 */
 struct Resource {
 	uint32_t GetSize() const { return m_DataSize; }
-	uint32_t GetAlignSize() const { return m_AlignmentSize; }
+	uint32_t GetAlignSize() const { return m_Alignment; }
 
 	GPU_V_ADDRESS GetGpuData() const { return m_GpuPtr; }
 
 	virtual void Map(void** OutCpuPp) = 0;
 	virtual void UnMap() = 0;
 
-
-
-
-	
 protected:
 	GPU_V_ADDRESS m_GpuPtr;
 	uint32_t m_DataSize;
-	uint32_t m_AlignmentSize;
-
+	uint32_t m_Alignment;
 };
 
 enum class RES_CONTENT_TYPE : int8_t
@@ -307,34 +302,26 @@ public:
 	ConstantBuffer() = delete;
 };
 
-struct Texture {
+struct TextureResourceDesc;
+struct TexDataInfo;
+class TextureResource;
 
-	Texture(Mox::Resource& InRes) : m_ReferencedResource(InRes) { }
+class Texture
+{
+public:
+	Texture(Mox::TextureResourceDesc& InDesc);
 
-	virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::BufferResource& InIntermediateBuffer) = 0;
-	// Allocate empty space on GPU
-	virtual void InstantiateOnGPU() = 0;
+	// Note: Updates are meant to be stored in contiguous memory.
+	// After the update is done, the input memory will be deleted.
+	void UpdateContent(void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo);
 
-	virtual size_t GetGPUSize() = 0;
-
-	size_t GetWidth() const { return m_Width; }
-	size_t GetHeight() const { return m_Height; }
-	BUFFER_FORMAT GetFormat() { return m_TexelFormat; }
-	TEXTURE_TYPE GetType() { return m_Type; }
-	size_t GetMipLevelsNum() { return m_MipLevelsNum; }
-	size_t GetArraySize() const { return m_ArraySize; }
-
-	Mox::Resource& GetResource() const { return m_ReferencedResource; }
-
-protected:
-	Mox::Resource&	m_ReferencedResource;
-	size_t          m_Width;
-	size_t          m_Height;     // Should be 1 for 1D textures
-	size_t          m_ArraySize;  // For cubemap, this is a multiple of 6
-	size_t          m_MipLevelsNum;
-	BUFFER_FORMAT   m_TexelFormat;
-	TEXTURE_TYPE    m_Type;
+	// Reserved for render thread
+	Mox::TextureResource* GetResource() const { return m_Resource; }
+private:
+	// Pointer reserved for render thread access
+	Mox::TextureResource* m_Resource;
 };
+
 
 struct ResourceView
 {
@@ -361,7 +348,7 @@ protected:
 };
 
 struct ShaderResourceView : public ResourceView {
-	virtual void InitAsTex2DOrCubemap(Mox::Texture& InTexture) = 0;
+	virtual void InitAsTex2DOrCubemap(Mox::TextureResource& InTexture) = 0;
 protected:
 	ShaderResourceView(Mox::Resource& InResource) { }
 };
@@ -412,6 +399,56 @@ enum class TEXTURE_ADDRESS_MODE : int {
 	MIRROR,
 	CLAMP,
 	BORDER
+};
+
+// Used to describe a texture subresource data on CPU
+struct TexDataInfo
+{
+	void* m_Location;
+	uint32_t m_RowSize;
+	uint32_t m_TotalSize;
+	uint16_t m_MipLevel;
+	uint16_t m_SliceIndex;
+};
+
+struct TextureResourceDesc
+{
+	size_t m_Width;
+	size_t m_Height; 
+	size_t m_ArraySize; 
+	size_t m_MipLevelsNum;
+	size_t m_PlanesNum;
+	BUFFER_FORMAT m_TexelFormat;
+	TEXTURE_TYPE m_Type;
+};
+
+class TextureResource {
+
+public:
+	TextureResource(const Mox::TextureResourceDesc& InDesc, 
+		Mox::Resource& InOwnerResource,	size_t InAllocationOffset, size_t InSize);
+
+	size_t GetGPUSize() const { return m_Size; };
+	size_t GetWidth() const { return m_Width; }
+	size_t GetHeight() const { return m_Height; }
+	BUFFER_FORMAT GetFormat() { return m_TexelFormat; }
+	TEXTURE_TYPE GetType() const { return m_Type; }
+	uint16_t GetMipLevelsNum() const { return m_MipLevelsNum; }
+	uint16_t GetArraySize() const { return m_ArraySize; }
+
+	Mox::Resource& GetOwnerResource() const { return m_OwnerResource; }
+
+protected:
+	Mox::Resource& m_OwnerResource;
+	Mox::GPU_V_ADDRESS m_GpuPtr;
+	size_t			m_Size;
+	size_t          m_Width;
+	size_t          m_Height;     // Should be 1 for 1D textures
+	uint16_t        m_ArraySize;  // For cubemap, this is a multiple of 6
+	uint16_t        m_MipLevelsNum;
+	uint16_t        m_PlanesNum;
+	BUFFER_FORMAT   m_TexelFormat;
+	TEXTURE_TYPE    m_Type;
 };
 
 struct StaticSampler {

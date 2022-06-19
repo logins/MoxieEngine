@@ -20,6 +20,7 @@ namespace Mox {
 	class D3D12DescriptorHeap;
 	class D3D12DynamicBufferAllocator;
 	class D3D12StaticBufferAllocator;
+	class D3D12TextureAllocator;
 	class D3D12DescHeapFactory;
 	class Window;
 	struct WindowInitInput;
@@ -46,34 +47,33 @@ public:
 
 	void OnNewFrameEnded() override;
 
-	void UpdateStaticResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates) override;
+	void UpdateStaticBufferResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates) override;
+
+	void UpdateTextureResources(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTextureUpdates) override;
 
 	Mox::VertexBuffer& AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) override;
 
 	Mox::IndexBuffer& AllocateIndexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) override;
 
-	virtual Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) override;
+	Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) override;
 
-	virtual Mox::Texture& AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum = 0, Mox::RESOURCE_FLAGS InCreationFlags = RESOURCE_FLAGS::NONE) override;
+	Mox::TextureResource& AllocateTextureResource(const Mox::TextureResourceRequest& InTexDesc) override;
 
-	virtual Mox::Texture& AllocateEmptyTexture(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels) override;
+	Mox::VertexBufferView& AllocateVertexBufferView(Mox::BufferResource& InVBResource) override;
 
+	Mox::IndexBufferView& AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum) override;
 
-	virtual Mox::VertexBufferView& AllocateVertexBufferView(Mox::BufferResource& InVBResource) override;
+	Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource) override;
 
-	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum) override;
+	Mox::ShaderResourceView& AllocateShaderResourceView(Mox::TextureResource& InTexture) override;
 
-	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource) override;
+	Mox::ShaderResourceView& AllocateSrvTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip = 0, int32_t InMipLevels = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) override;
 
-	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) override;
+	Mox::UnorderedAccessView& AllocateUavTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, int32_t InMipSlice = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) override;
 
-	virtual Mox::ShaderResourceView& AllocateSrvTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip = 0, int32_t InMipLevels = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) override;
+	Mox::Shader& AllocateShader(wchar_t const* InShaderPath) override;
 
-	virtual Mox::UnorderedAccessView& AllocateUavTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, int32_t InMipSlice = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) override;
-
-	virtual Mox::Shader& AllocateShader(wchar_t const* InShaderPath) override;
-
-	virtual Mox::PipelineState& AllocatePipelineState() override;
+	Mox::PipelineState& AllocatePipelineState() override;
 
 	void ReserveDynamicBufferMemory(size_t InSize, void*& OutCpuPtr, D3D12_GPU_VIRTUAL_ADDRESS& OutGpuPtr);
 
@@ -93,9 +93,15 @@ public:
 
 	void AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest) override;
 
-private:
+	Mox::D3D12Resource& AllocateD3D12Resource(D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, 
+		Mox::RESOURCE_STATE InState, uint32_t InSize = 1, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE);
 
-	Mox::D3D12Resource& AllocateGraphicsBufferResource(uint32_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE);
+	// D3D12 Specific
+	Mox::D3D12Resource& AllocateD3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType, size_t InSize = 1);
+
+
+
+private:
 
 	// TODO move this as a free function in the implementation file, to be of help on every frame when updating the dynamic buffer location and content
 	void StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::BufferResource& InDynBuffer, Mox::ConstantBufferView& InResourceView);
@@ -105,7 +111,6 @@ private:
 	std::deque<Mox::VertexBuffer> m_VertexBufferArray;
 	std::deque<Mox::IndexBuffer> m_IndexBufferArray;
 	std::deque<Mox::BufferResource> m_BufferArray;
-	std::deque<std::unique_ptr<Mox::Texture>> m_TextureArray;
 
 	std::deque<std::unique_ptr<Mox::Drawable>> m_DrawableArray;
 	std::deque<std::unique_ptr<Mox::RenderProxy>> m_RenderProxyArray;
@@ -120,6 +125,8 @@ private:
 	std::unique_ptr<Mox::D3D12StaticBufferAllocator> m_StaticBufferAllocator;
 
 	std::unique_ptr<Mox::D3D12DynamicBufferAllocator> m_DynamicBufferAllocator;
+
+	std::unique_ptr<Mox::D3D12TextureAllocator> m_TextureAllocator;
 
 	std::unique_ptr<Mox::D3D12DescHeapFactory> m_DescHeapFactory;
 

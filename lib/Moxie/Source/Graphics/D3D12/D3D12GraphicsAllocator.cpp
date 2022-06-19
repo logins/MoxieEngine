@@ -21,6 +21,7 @@
 #include "MoxEntity.h"
 #include "MoxRenderProxy.h"
 #include "D3D12StaticBufferAllocator.h"
+#include "D3D12TextureAllocator.h"
 #include "MoxDrawable.h"
 
 namespace Mox { 
@@ -33,19 +34,10 @@ namespace Mox {
 	{
 		m_StaticBufferAllocator.reset();
 		m_DynamicBufferAllocator.reset();
+		m_TextureAllocator.reset();
 
 		m_DescHeapFactory.reset();
 
-	}
-
-	Mox::D3D12Resource& D3D12GraphicsAllocator::AllocateGraphicsBufferResource(
-		uint32_t InSize, Mox::RESOURCE_HEAP_TYPE InHeapType, Mox::RESOURCE_STATE InState, Mox::RESOURCE_FLAGS InFlags /*= RESOURCE_FLAGS::NONE*/)
-	{
-
-		m_GraphicsResources.emplace_back(Mox::D3D12_RES_TYPE::Buffer, InHeapType, InSize, InFlags, InState);
-
-
-		return m_GraphicsResources.back();
 	}
 
 	void D3D12GraphicsAllocator::AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest)
@@ -75,24 +67,32 @@ namespace Mox {
 
 	}
 
+	Mox::D3D12Resource& D3D12GraphicsAllocator::AllocateD3D12Resource(
+		D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, 
+		Mox::RESOURCE_STATE InState, uint32_t InSize /*= 1*/, Mox::RESOURCE_FLAGS InFlags /*= RESOURCE_FLAGS::NONE*/)
+	{
+		m_GraphicsResources.emplace_back(Mox::D3D12Resource(Mox::D3D12_RES_TYPE::Buffer, InHeapType, InSize, InFlags, InState));
+
+		return m_GraphicsResources.back();
+	}
+
+	Mox::D3D12Resource& D3D12GraphicsAllocator::AllocateD3D12Resource(
+		Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, Mox::D3D12_RES_TYPE InResType, size_t InSize /*= 1*/)
+	{
+		m_GraphicsResources.emplace_back(Mox::D3D12Resource(InD3D12Res, InResType, InSize));
+
+		return m_GraphicsResources.back();
+	}
+
 	Mox::BufferResource& D3D12GraphicsAllocator::AllocateDynamicBuffer(uint32_t InSize)
 	{
 		return m_DynamicBufferAllocator->Allocate(InSize);
 	}
 
-	Mox::Texture& D3D12GraphicsAllocator::AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum /*= 0*/, Mox::RESOURCE_FLAGS InCreationFlags /*= RESOURCE_FLAGS::NONE*/)
+	Mox::TextureResource& D3D12GraphicsAllocator::AllocateTextureResource(const Mox::TextureResourceRequest& InTexDesc)
 	{
-		// TODO FIX ME
-		return *m_TextureArray.back();
+		return m_TextureAllocator->Allocate(InTexDesc.m_Desc);
 	}
-
-	Mox::Texture& D3D12GraphicsAllocator::AllocateEmptyTexture(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels)
-	{
-				// TODO FIX ME
-		return *m_TextureArray.back();
-	}
-
-
 
 	Mox::VertexBufferView& D3D12GraphicsAllocator::AllocateVertexBufferView(Mox::BufferResource& InVBResource)
 	{
@@ -116,7 +116,7 @@ namespace Mox {
 	}
 
 
-	Mox::ShaderResourceView& D3D12GraphicsAllocator::AllocateShaderResourceView(Mox::Texture& InTexture)
+	Mox::ShaderResourceView& D3D12GraphicsAllocator::AllocateShaderResourceView(Mox::TextureResource& InTexture)
 	{
 		// Allocate the view
 		// Note: the constructor will allocate a corresponding descriptor in a CPU desc heap
@@ -125,7 +125,7 @@ namespace Mox {
 			);
 	}
 
-	Mox::ShaderResourceView& D3D12GraphicsAllocator::AllocateSrvTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip /*= 0*/, int32_t InMipLevels /*= -1*/, uint32_t InFirstArraySlice /*= 0*/, uint32_t InPlaneSlice /*= 0*/)
+	Mox::ShaderResourceView& D3D12GraphicsAllocator::AllocateSrvTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip /*= 0*/, int32_t InMipLevels /*= -1*/, uint32_t InFirstArraySlice /*= 0*/, uint32_t InPlaneSlice /*= 0*/)
 	{
 		std::unique_ptr<Mox::D3D12ShaderResourceView> outSrv = std::make_unique<Mox::D3D12ShaderResourceView>(InTexture);
 
@@ -136,7 +136,7 @@ namespace Mox {
 			);
 	}
 
-	Mox::UnorderedAccessView& D3D12GraphicsAllocator::AllocateUavTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, int32_t InMipSlice /*= -1*/, uint32_t InFirstArraySlice /*= 0*/, uint32_t InPlaceSlice /*= 0*/)
+	Mox::UnorderedAccessView& D3D12GraphicsAllocator::AllocateUavTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, int32_t InMipSlice /*= -1*/, uint32_t InFirstArraySlice /*= 0*/, uint32_t InPlaceSlice /*= 0*/)
 	{
 		std::unique_ptr<Mox::D3D12UnorderedAccessView> outUav = std::make_unique<Mox::D3D12UnorderedAccessView>(InTexture, InArraySize, InMipSlice, InFirstArraySlice, InPlaceSlice);
 
@@ -252,10 +252,15 @@ namespace Mox {
 		m_DynamicBufferAllocator->OnFrameEnded();
 	}
 
-	void D3D12GraphicsAllocator::UpdateStaticResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates)
+	void D3D12GraphicsAllocator::UpdateStaticBufferResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates)
 	{
 		m_StaticBufferAllocator->UploadContentUpdates(InCmdList, InUpdates);
 
+	}
+
+	void D3D12GraphicsAllocator::UpdateTextureResources(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTextureUpdates)
+	{
+		m_TextureAllocator->UpdateContent(InCmdList, InTextureUpdates);
 	}
 
 	void D3D12GraphicsAllocator::Initialize()
@@ -264,15 +269,20 @@ namespace Mox {
 
 		// Allocate an empty resource and create the dynamic buffer allocator on it
 		// Note: We are using a system similar to what described for Diligent Engine https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D
-		Mox::D3D12Resource& dynamicBufferResource = AllocateGraphicsBufferResource(0, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& dynamicBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
 
 		m_DynamicBufferAllocator = std::make_unique<Mox::D3D12DynamicBufferAllocator>(dynamicBufferResource);
 
 
-		Mox::D3D12Resource& targetBufferResource = AllocateGraphicsBufferResource(0, RESOURCE_HEAP_TYPE::DEFAULT, RESOURCE_STATE::GEN_READ);
-		Mox::D3D12Resource& stagingBufferResource = AllocateGraphicsBufferResource(0, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& targetBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::DEFAULT, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& stagingBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
 
 		m_StaticBufferAllocator = std::make_unique<Mox::D3D12StaticBufferAllocator>(targetBufferResource, stagingBufferResource);
+
+
+		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+
+		m_TextureAllocator = std::make_unique<Mox::D3D12TextureAllocator>(4194304, stagingBufferResourceForTextures);
 	}
 
 	void D3D12GraphicsAllocator::StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::BufferResource& InDynBuffer, Mox::ConstantBufferView& InResourceView)

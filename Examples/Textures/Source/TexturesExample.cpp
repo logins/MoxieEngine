@@ -45,6 +45,8 @@ int main()
 
 void TexturesExampleApplication::OnInitializeContent()
 {
+	/*
+
 	// Load Content
 	Mox::CommandList& loadContentCmdList = m_Renderer->GetCmdQueue()->GetAvailableCommandList();
 
@@ -233,7 +235,7 @@ void TexturesExampleApplication::OnInitializeContent()
 	// Initialize the Model Matrix
 	m_CubeEntity = &AddEntity();
 	m_CubeEntity->m_ModelMatrix = Eigen::Matrix4f::Identity();
-
+*/
 	// Window events delegates
 	m_MainWindow->OnMouseMoveDelegate.Add<TexturesExampleApplication, &TexturesExampleApplication::OnMouseMove>(this);
 	m_MainWindow->OnMouseWheelDelegate.Add<TexturesExampleApplication, &TexturesExampleApplication::OnMouseWheel>(this);
@@ -243,9 +245,6 @@ void TexturesExampleApplication::OnInitializeContent()
 
 void TexturesExampleApplication::OnMouseWheel(float InDeltaRot)
 {
-	// TODO this needs to be passed by message to the renderer
-	//m_Fov -= InDeltaRot / 1200.f;
-	//SetFov(std::max(0.2094395102f, std::min(m_Fov, 1.570796327f))); // clamping
 }
 
 void TexturesExampleApplication::OnMouseMove(int32_t InX, int32_t InY)
@@ -261,21 +260,10 @@ void TexturesExampleApplication::OnMouseMove(int32_t InX, int32_t InY)
 
 void TexturesExampleApplication::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	Eigen::Transform<float, 3, Eigen::Affine> tr;
-	tr.setIdentity();
-	tr.rotate(Eigen::AngleAxisf(-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), Eigen::Vector3f::UnitY()))
-		.rotate(Eigen::AngleAxisf(-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), Eigen::Vector3f::UnitX()));
-
-	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
 }
 
 void TexturesExampleApplication::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	Eigen::Transform<float, 3, Eigen::Affine> tr;
-	tr.setIdentity();
-	tr.translate(Eigen::Vector3f(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0));
-
-	m_CubeEntity->m_ModelMatrix = tr.matrix() * m_CubeEntity->m_ModelMatrix;
 }
 
 void TexturesExampleApplication::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)
@@ -295,28 +283,5 @@ void TexturesExampleApplication::UpdateContent(float InDeltaTime)
 
 	// Updating MVP matrix
 
-
-}
-
-void TexturesExampleApplication::RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView)
-{
-	// Updating cube MVP matrix
-	m_MvpMatrix = InMainView.m_ProjMatrix * InMainView.m_ViewMatrix * m_CubeEntity->m_ModelMatrix;
-
-	// Fill Command List Pipeline-related Data
-	{
-		InCmdList.SetPipelineStateAndResourceBinder(*m_PipelineState);
-
-		InCmdList.SetInputAssemblerData(Mox::PRIMITIVE_TOPOLOGY::PT_TRIANGLELIST, *m_VertexBufferView, *m_IndexBufferView);
-	}
-
-	// Fill Command List Buffer Data and Draw Command
-	{
-		InCmdList.SetGraphicsRootConstants(0, sizeof(Eigen::Matrix4f) / 4, m_MvpMatrix.data(), 0);
-
-		InCmdList.ReferenceSRV(1, *m_CubemapView); // Note: the SRV is already uploaded to GPU and at render time it just need to be referenced in the pipeline at the given root index
-
-		InCmdList.DrawIndexed(_countof(m_IndexData));
-	}
 
 }

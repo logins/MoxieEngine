@@ -34,10 +34,10 @@ private:
 	// but instead to a draw command object for the current entity being drawn.
 	// In that case we would create the draw command object with references instead of raw pointers.
 	// Vertex buffer for the cube
-	Mox::Buffer* m_VertexBuffer;
+	Mox::ConstantBuffer* m_VertexBuffer;
 	Mox::VertexBufferView* m_VertexBufferView;
 	// Index buffer for the cube
-	Mox::Buffer* m_IndexBuffer;
+	Mox::ConstantBuffer* m_IndexBuffer;
 	Mox::IndexBufferView* m_IndexBufferView;
 
 	// Texture for the cubemap
@@ -87,7 +87,6 @@ protected:
 
 	virtual void UpdateContent(float InDeltaTime) override;
 
-	virtual void RenderMainView(Mox::CommandList& InCmdList, const Mox::ContextView& InMainView) override;
 
 
 

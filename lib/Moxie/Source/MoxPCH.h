@@ -36,4 +36,5 @@
 #include <mutex>
 
 #include "Delegate.h"
+#include "MoxUtils.h"
 #include "GraphicsUtils.h"

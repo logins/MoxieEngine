@@ -43,7 +43,7 @@ public:
 
 	virtual void OnNewFrameEnded() = 0;
 
-	virtual void UpdateStaticResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates) = 0;
+	virtual void UpdateStaticBufferResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates) = 0;
 
 	virtual Mox::VertexBuffer& AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) = 0;
 
@@ -51,9 +51,9 @@ public:
 
 	virtual Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) = 0;
 
-	virtual Mox::Texture& AllocateTextureFromFile(wchar_t const* InTexturePath, Mox::TEXTURE_FILE_FORMAT InFileFormat, int32_t InMipsNum = 0, Mox::RESOURCE_FLAGS InCreationFlags = RESOURCE_FLAGS::NONE) = 0;
-	
-	virtual Mox::Texture& AllocateEmptyTexture(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels) = 0;
+	virtual Mox::TextureResource& AllocateTextureResource(const Mox::TextureResourceRequest& InTexDesc) = 0;
+
+	virtual void UpdateTextureResources(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTextureUpdates) = 0;
 
 	virtual std::vector<RenderProxy*> CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) = 0;
 
@@ -68,12 +68,12 @@ public:
 	virtual Mox::IndexBufferView& AllocateIndexBufferView(Mox::BufferResource& InIB, Mox::BUFFER_FORMAT InFormat, uint32_t InElementsNum) = 0;
 	virtual Mox::ConstantBufferView& AllocateConstantBufferView(Mox::BufferResource& InResource) = 0;
 
-	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::Texture& InTexture) = 0;
+	virtual Mox::ShaderResourceView& AllocateShaderResourceView(Mox::TextureResource& InTexture) = 0;
 	// SRV referencing a Tex2D Array
-	virtual Mox::ShaderResourceView& AllocateSrvTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip = 0, int32_t InMipLevels = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) = 0;
+	virtual Mox::ShaderResourceView& AllocateSrvTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip = 0, int32_t InMipLevels = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) = 0;
 
 	// UAV referencing a Tex2D Array
-	virtual Mox::UnorderedAccessView& AllocateUavTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, int32_t InMipSlice = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) = 0;
+	virtual Mox::UnorderedAccessView& AllocateUavTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, int32_t InMipSlice = -1, uint32_t InFirstArraySlice = 0, uint32_t InPlaceSlice = 0) = 0;
 	
 	virtual Mox::Shader& AllocateShader(wchar_t const* InShaderPath) = 0;
 	virtual Mox::PipelineState& AllocatePipelineState() = 0;
@@ -93,7 +93,6 @@ public:
 	GraphicsAllocatorBase(GraphicsAllocatorBase&&) = delete;
 	GraphicsAllocatorBase& operator=(GraphicsAllocatorBase&&) = delete;
 };
-
 
 
 class GraphicsAllocator

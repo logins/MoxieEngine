@@ -109,12 +109,13 @@ namespace Mox {
 	enum class D3D12_RES_TYPE : uint8_t
 	{
 		Buffer,
+		Texture,
 		BackBuffer
 	};
 
 	struct D3D12Resource : public Mox::Resource {
 		// Constructor for when the resource is already allocated (like backbuffers from the window swapchain)
-		D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType = D3D12_RES_TYPE::Buffer);
+		D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType = D3D12_RES_TYPE::Buffer, size_t InSize = 0);
 
 		// This constructor will be very expensive! It creates a buffer resource in upload heap and orders a copy to a second new resource in default heap
 		// TODO it will need changing
@@ -123,6 +124,14 @@ namespace Mox {
 		D3D12Resource(D3D12_RES_TYPE InResType, RESOURCE_HEAP_TYPE InHeapType, size_t InSize, Mox::RESOURCE_FLAGS InFlags, Mox::RESOURCE_STATE InState);
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>& GetInner() { return m_D3D12Resource; }
+		// ----- Fields mostly used only by texture resources ----- TODO MOVE in standalone class!
+		D3D12_RESOURCE_DESC& GetDesc() { return m_Desc; }
+		uint16_t GetSubresourcesNum() const { return m_SubresourcesNum; }
+		std::vector<uint32_t>& GetRowsNumVector() { return m_RowsNumVector; }
+		std::vector<uint64_t>& GetRowSizeVector() { return m_RowSizeVector; }
+		std::vector<uint64_t>& GeTotalBytesVector() { return m_TotalBytesVector; }
+		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>& GetSubresourceFootprints() { return m_SubresourceFootprints; }
+		// --------------------------------------------------------------------------------
 		void SetInner(Microsoft::WRL::ComPtr<ID3D12Resource> InResource) { m_D3D12Resource = InResource; }
 		uint32_t GetSizeInBytes() const { return m_DataSize; }
 		void Map(void** OutCpuPp) { m_D3D12Resource->Map(0, nullptr, OutCpuPp); }
@@ -136,7 +145,17 @@ namespace Mox {
 		//D3D12Resource(const D3D12Resource& InObjToCopy) = delete;
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_D3D12Resource;
-		// TODO delete this once we implement placed resources!!
+
+		D3D12_RESOURCE_DESC m_Desc;
+
+		// Fields used only in texture resources.. // TODO move them to a separate class
+
+		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> m_SubresourceFootprints;
+		uint16_t m_SubresourcesNum;
+		std::vector <uint32_t> m_RowsNumVector;
+		std::vector <uint64_t> m_RowSizeVector;
+		std::vector <uint64_t> m_TotalBytesVector;
+		
 	};
 
 	struct D3D12BufferResource : public Mox::BufferResource {
@@ -150,25 +169,9 @@ namespace Mox {
 		
 	};
 
-	struct D3D12Texture : public Mox::Texture {
-
-		D3D12Texture(Mox::Resource& InRes) : Mox::Texture(InRes) { }
-
-		virtual void UploadToGPU(Mox::CommandList& InCommandList, Mox::BufferResource& InIntermediateBuffer) override;
-
-		virtual void InstantiateOnGPU() override;
-
-		virtual size_t GetGPUSize() override;
-
-		Microsoft::WRL::ComPtr<ID3D12Resource>& GetInner() { return m_D3D12Resource; }
-	private:
-
-		void SetGeneralTextureParams(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels, Mox::RESOURCE_FLAGS InCreationFlags);
-		CD3DX12_RESOURCE_DESC m_TextureDesc;
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_D3D12Resource;
-		std::vector<D3D12_SUBRESOURCE_DATA> m_SubresourceDesc;
-
-	};
+	// We really don't need a D3D12TextureResource, at least for the moment, since TextureResource already has
+	// all the attributes we need to represent a texture resource on render thread side.
+	// All the D3D12 specific data is already contained in the referenced resource itself.
 
 	struct D3D12ConstantBufferView : public Mox::ConstantBufferView
 	{
@@ -203,15 +206,15 @@ namespace Mox {
 	{
 		D3D12ShaderResourceView() = delete;
 
-		D3D12ShaderResourceView(Mox::Texture& InTextureToReference);
+		D3D12ShaderResourceView(Mox::TextureResource& InTextureToReference);
 
-		void InitAsTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip, uint32_t InMipLevels, uint32_t InFirstArraySlice, uint32_t InPlaceSlice);
+		void InitAsTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip, uint32_t InMipLevels, uint32_t InFirstArraySlice, uint32_t InPlaceSlice);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescHandle() { return m_CpuAllocatedRange->m_FirstCpuHandle; }
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescHandle() { return m_GpuAllocatedRange->m_FirstGpuHandle; }
 
-		virtual void InitAsTex2DOrCubemap(Mox::Texture& InTexture);
+		virtual void InitAsTex2DOrCubemap(Mox::TextureResource& InTexture);
 
 		void RebuildResourceReference() { /** TODO do we really need this? */ };
 
@@ -228,7 +231,7 @@ namespace Mox {
 
 	struct D3D12UnorderedAccessView : public Mox::UnorderedAccessView
 	{
-		D3D12UnorderedAccessView(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMipSlice, uint32_t InFirstArraySlice, uint32_t InPlaneSlice);
+		D3D12UnorderedAccessView(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMipSlice, uint32_t InFirstArraySlice, uint32_t InPlaneSlice);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescHandle() { return m_CpuAllocatedRange->m_FirstCpuHandle; }
 

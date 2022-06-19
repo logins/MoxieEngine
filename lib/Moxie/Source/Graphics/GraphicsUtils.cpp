@@ -36,6 +36,11 @@ namespace Mox {
 		// TODO
 	}
 
+	void RequestTextureResource(Mox::Texture& InTexture, Mox::TextureResourceDesc& InDesc)
+	{
+		GetSimThreadUpdatesForRenderer().m_TextureResourceRequests.emplace_back(Mox::TextureResourceRequest{ &InTexture, InDesc });
+	}
+
 	void RequestRenderProxyForEntity(Entity& InEntity)
 	{
 		GetSimThreadUpdatesForRenderer().m_ProxyRequests.emplace_back(InEntity);
@@ -61,6 +66,11 @@ namespace Mox {
 		{
 			GetSimThreadUpdatesForRenderer().m_StaticBufferUpdates.emplace_back(InBufferHolder, InData, InSize);
 		}
+	}
+
+	void UpdateTextureContent(Mox::TextureResourceUpdate&& InUpdate)
+	{
+		GetSimThreadUpdatesForRenderer().m_TextureUpdates.emplace_back(std::move(InUpdate));
 	}
 
 	void EnableDebugLayer()

@@ -69,6 +69,24 @@ namespace Mox {
 
 	};
 
+	struct TextureResourceRequest
+	{
+		Mox::Texture* m_TargetTexture;
+		TextureResourceDesc m_Desc;
+	};
+
+	struct TextureResourceUpdate
+	{
+		// Pointer to the texture data to transfer over the GPU.
+		// When the transfer is complete, the request will 
+		// automatically call delete on this pointer.
+		void* m_TempData;
+		size_t m_UpdateSize;
+		std::vector<Mox::TexDataInfo> m_UpdateDesc;
+		Mox::Texture* m_TargetTexture;
+	};
+
+
 	// When the render proxy will be created for the target entity, 
 	// the render resources for the bound meshes will be created as well
 	struct RenderProxyRequest
@@ -104,6 +122,10 @@ namespace Mox {
 		std::vector<Mox::BufferResourceUpdate> m_DynamicBufferUpdates;
 
 		std::vector<Mox::BufferResourceUpdate> m_StaticBufferUpdates;
+
+		std::vector<Mox::TextureResourceRequest> m_TextureResourceRequests;
+
+		std::vector<Mox::TextureResourceUpdate> m_TextureUpdates;
 	};
 
 	// Render updates are meant to be filled in the simulation thread
@@ -115,6 +137,8 @@ namespace Mox {
 	// Stores a request of releasing the buffer resource associated with the given buffer
 	void ReleaseResourceForBuffer(Mox::ConstantBuffer& InBuffer);
 
+	void RequestTextureResource(Mox::Texture& InTexture, TextureResourceDesc& InDesc);
+
 	void RequestRenderProxyForEntity(Mox::Entity& InEntity);
 
 	void ReleaseRenderProxyForEntity(Mox::Entity& InEntity);
@@ -123,6 +147,7 @@ namespace Mox {
 
 	void UpdateConstantBufferValue(Mox::BufferResourceHolder& InBufferHolder, const void* InData, uint32_t InSize);
 
+	void UpdateTextureContent(Mox::TextureResourceUpdate&& InUpdate);
 
 	// Note: If we had another SDK to choose from, the same functions would be defined again returning objects from the other SDK
 

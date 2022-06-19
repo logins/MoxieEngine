@@ -99,4 +99,38 @@ namespace Mox {
 		Mox::ReleaseResourceForBuffer(*this);
 	}
 
+	TextureResource::TextureResource(const Mox::TextureResourceDesc& InDesc, 
+		Mox::Resource& InOwnerResource, size_t InAllocationOffset, size_t InSize)
+		: m_OwnerResource(InOwnerResource),
+		m_GpuPtr(InOwnerResource.GetGpuData() + InAllocationOffset),
+		m_Size(InOwnerResource.GetSize()),
+		m_Width(InDesc.m_Width),
+		m_Height(InDesc.m_Height),
+		m_ArraySize(InDesc.m_ArraySize),
+		m_MipLevelsNum(InDesc.m_MipLevelsNum),
+		m_PlanesNum(InDesc.m_PlanesNum),
+		m_TexelFormat(InDesc.m_TexelFormat),
+		m_Type(InDesc.m_Type)
+	{
+
+	}
+
+	Texture::Texture(TextureResourceDesc& InDesc)
+	{
+		Mox::RequestTextureResource(*this, InDesc);
+
+	}
+
+	void Texture::UpdateContent(void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo)
+	{
+		// Note: we are assuming UpdateInfo data is stored in contiguous memory
+
+		Mox::UpdateTextureContent(Mox::TextureResourceUpdate{
+		InUpdateData,
+		InUpdateSize,
+		std::move(InUpdateInfo),
+		this
+		});
+	}
+
 }

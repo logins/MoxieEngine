@@ -316,13 +316,13 @@ namespace Mox
 		m_IndexBufferView.Format = Mox::BufferFormatToD3D12(InFormat);
 	}
 
-	D3D12ShaderResourceView::D3D12ShaderResourceView(Mox::Texture& InTextureToReference)
-		: ShaderResourceView(InTextureToReference.GetResource())
+	D3D12ShaderResourceView::D3D12ShaderResourceView(Mox::TextureResource& InTextureToReference)
+		: ShaderResourceView(InTextureToReference.GetOwnerResource())
 	{
 		InitAsTex2DOrCubemap(InTextureToReference);
 	}
 
-	void D3D12ShaderResourceView::InitAsTex2DOrCubemap(Mox::Texture& InTexture)
+	void D3D12ShaderResourceView::InitAsTex2DOrCubemap(Mox::TextureResource& InTexture)
 {
 		if (!m_CpuAllocatedRange)
 		{
@@ -349,7 +349,7 @@ namespace Mox
 		// Instantiate View
 		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
 
-		d3d12Device.GetInner()->CreateShaderResourceView(static_cast<D3D12Texture&>(InTexture).GetInner().Get(), &viewDesc, m_CpuAllocatedRange->m_FirstCpuHandle);
+		d3d12Device.GetInner()->CreateShaderResourceView(static_cast<Mox::D3D12Resource&>(InTexture.GetOwnerResource()).GetInner().Get(), &viewDesc, m_CpuAllocatedRange->m_FirstCpuHandle);
 
 	}
 
@@ -358,7 +358,7 @@ namespace Mox
 		return false; // TODO fix me
 	}
 
-	void D3D12ShaderResourceView::InitAsTex2DArray(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip, uint32_t InMipLevels, uint32_t InFirstArraySlice, uint32_t InPlaceSlice)
+	void D3D12ShaderResourceView::InitAsTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip, uint32_t InMipLevels, uint32_t InFirstArraySlice, uint32_t InPlaceSlice)
 	{
 		// Allocate static descriptor in the CPU-only desc heap
 		if (!m_CpuAllocatedRange)
@@ -379,11 +379,11 @@ namespace Mox
 		// Instantiate View
 		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
 
-		d3d12Device.GetInner()->CreateShaderResourceView(static_cast<D3D12Texture&>(InTexture).GetInner().Get(), &srvDesc, m_CpuAllocatedRange->m_FirstCpuHandle);
+		d3d12Device.GetInner()->CreateShaderResourceView(static_cast<Mox::D3D12Resource&>(InTexture.GetOwnerResource()).GetInner().Get(), &srvDesc, m_CpuAllocatedRange->m_FirstCpuHandle);
 	}
 
-	D3D12UnorderedAccessView::D3D12UnorderedAccessView(Mox::Texture& InTexture, uint32_t InArraySize, uint32_t InMipSlice, uint32_t InFirstArraySlice, uint32_t InPlaneSlice)
-		: UnorderedAccessView(InTexture.GetResource())
+	D3D12UnorderedAccessView::D3D12UnorderedAccessView(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMipSlice, uint32_t InFirstArraySlice, uint32_t InPlaneSlice)
+		: UnorderedAccessView(InTexture.GetOwnerResource())
 	{
 		// Allocate static descriptor in the CPU-only desc heap
 		if (!m_CpuAllocatedRange)
@@ -402,7 +402,7 @@ namespace Mox
 		// Instantiate View
 		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
 
-		d3d12Device.GetInner()->CreateUnorderedAccessView(static_cast<D3D12Texture&>(InTexture).GetInner().Get(), nullptr, &uavDesc, m_CpuAllocatedRange->m_FirstCpuHandle);
+		d3d12Device.GetInner()->CreateUnorderedAccessView(static_cast<Mox::D3D12Resource&>(InTexture.GetOwnerResource()).GetInner().Get(), nullptr, &uavDesc, m_CpuAllocatedRange->m_FirstCpuHandle);
 	}
 
 	bool D3D12UnorderedAccessView::IsGpuAllocated()
@@ -442,112 +442,64 @@ namespace Mox
 	}
 
 
-	D3D12Resource::D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType) : m_D3D12Resource(InD3D12Res)//std::move(InD3D12Res))
+	D3D12Resource::D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType, size_t InSize) 
+		: m_D3D12Resource(InD3D12Res),  m_Desc(InD3D12Res->GetDesc())
 	{
+		
+		m_DataSize = InSize;
+
 		if (InResType == D3D12_RES_TYPE::Buffer)
 		{
-			m_AlignmentSize = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
-
-			D3D12_RESOURCE_DESC resDesc = m_D3D12Resource->GetDesc();
-			m_DataSize = resDesc.Width * resDesc.Height;
-
-
 			m_GpuPtr = m_D3D12Resource->GetGPUVirtualAddress();
+			m_Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
 		}
+		else if (InResType == D3D12_RES_TYPE::Texture)
+		{
+			m_GpuPtr = m_D3D12Resource->GetGPUVirtualAddress();
+			m_Alignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+			m_SubresourcesNum = m_Desc.MipLevels * m_Desc.DepthOrArraySize;
 
-		// If we are representing a back buffer we just need reference to the inner resource
+			// Filling subresources footprint data
+			m_SubresourceFootprints.resize(m_SubresourcesNum);
+			m_RowsNumVector.resize(m_SubresourcesNum);
+			m_RowSizeVector.resize(m_SubresourcesNum);
+
+			static_cast<Mox::D3D12Device&>(GetDevice()).GetInner()->GetCopyableFootprints(
+				&m_Desc,
+				0,
+				GetSubresourcesNum(),
+				0,
+				m_SubresourceFootprints.data(),
+				GetRowsNumVector().data(),
+				m_RowSizeVector.data(),
+				m_TotalBytesVector.data()
+			);
+
+		}
 
 	}
 
-	D3D12Resource::D3D12Resource(Mox::D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, size_t InSize, Mox::RESOURCE_FLAGS InFlags, Mox::RESOURCE_STATE InState)
+	D3D12Resource::D3D12Resource(Mox::D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, size_t InSize, 
+		Mox::RESOURCE_FLAGS InFlags, Mox::RESOURCE_STATE InState)
 	{
-		InSize = Mox::Align(InSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
-		// If passed size is 0, set it to minimum resource size
-		if (InSize == 0)
-			InSize = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		m_Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
-		m_DataSize = InSize;
-		m_AlignmentSize = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		// Note: SetCpuData will align InSize with D3D12 buffer constraints
+		Check(InSize > 0)
 
-		 // At the moment we are handling only committed resources
+		m_DataSize = Mox::Align(InSize, m_Alignment);
+
 		Mox::CreateCommittedResource(static_cast<Mox::D3D12Device&>(
-			Mox::GetDevice()).GetInner(), 
+			Mox::GetDevice()).GetInner(),
 			m_D3D12Resource.GetAddressOf(),
-			HeapTypeToD3D12(InHeapType), 
-			InSize, Mox::ResFlagsToD3D12(InFlags), 
+			HeapTypeToD3D12(InHeapType),
+			m_DataSize, Mox::ResFlagsToD3D12(InFlags),
 			Mox::ResStateTypeToD3D12(InState));
 
 		m_GpuPtr = m_D3D12Resource->GetGPUVirtualAddress();
-
+		m_Desc = m_D3D12Resource->GetDesc();
 	}
 
-	void D3D12Texture::SetGeneralTextureParams(uint32_t InWidth, uint32_t InHeight, Mox::TEXTURE_TYPE InType, Mox::BUFFER_FORMAT InFormat, uint32_t InArraySize, uint32_t InMipLevels, Mox::RESOURCE_FLAGS InCreationFlags)
-	{
-		m_Width = InWidth; m_Height = InHeight;
-		m_ArraySize = InArraySize; m_MipLevelsNum = InMipLevels;
-		m_TexelFormat = InFormat;
-		m_Type = InType;
 
-		if (InType == Mox::TEXTURE_TYPE::TEX_2D || InType == Mox::TEXTURE_TYPE::TEX_CUBE)
-		{
-			m_TextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-				Mox::BufferFormatToD3D12(InFormat),
-				static_cast<UINT>(InWidth),
-				static_cast<UINT>(InHeight),
-				static_cast<UINT16>(InArraySize),
-				static_cast<UINT16>(InMipLevels),	// Note: there is an ORRIBLE bug that comes if we do not specify mip levels here: it will display only one cube face, and the other 5 faces will be black !!!
-													// The reason is the default mip levels will become 9, so 9 mips will be generated for the first face all subsequent in memory,
-													// so when we later copy subresources, copying the first 6 subresources, we are going to copy the first face plus its first 5 mips instead of the other cube faces!!!
-				1U, 0U, Mox::ResFlagsToD3D12(InCreationFlags)
-			);
-		}
-		else {
-			StopForFail("[D3D12Texture::SetGeneralTextureParams] Texture Type not handled yet.")
-		}
-	}
-
-	void D3D12Texture::UploadToGPU(Mox::CommandList& InCommandList, Mox::BufferResource& InIntermediateBuffer)
-	{
-		InstantiateOnGPU();
-
-		ID3D12GraphicsCommandList2* d3d12CmdList = static_cast<Mox::D3D12CommandList&>(InCommandList).GetInner().Get();
-
-		::UpdateSubresources(d3d12CmdList, m_D3D12Resource.Get(), static_cast<Mox::D3D12Resource&>(InIntermediateBuffer.GetResource()).GetInner().Get(), 0, 0, m_SubresourceDesc.size(), m_SubresourceDesc.data());
-
-		// Transition texture state to GENERIC_READ to be read by shaders
-		// Note: this is not optimal, usually we should transition the resource depending on the situation in which we want to use it, e.g. D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE in the case of pixel shader usage
-		CD3DX12_RESOURCE_BARRIER transitionBarrier = CD3DX12_RESOURCE_BARRIER::Transition(m_D3D12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-		d3d12CmdList->ResourceBarrier(1, &transitionBarrier);
-	}
-
-	void D3D12Texture::InstantiateOnGPU()
-	{
-		ID3D12Device2* d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice()).GetInner().Get();
-
-		if (!m_D3D12Resource)
-		{
-			// Allocate a committed resource in GPU dedicated memory (default heap)
-			d3d12Device->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-				D3D12_HEAP_FLAG_NONE,
-				&m_TextureDesc,
-				D3D12_RESOURCE_STATE_COPY_DEST, // We can create the resource directly in copy destination state since we want to fill it with content
-				nullptr,
-				IID_PPV_ARGS(&m_D3D12Resource));
-		}
-		else
-		{
-			StopForFail("Texture GPU resource already allocated")
-		}
-	}
-
-	size_t D3D12Texture::GetGPUSize()
-	{
-		size_t requiredIntermediateSize = 0;
-		static_cast<Mox::D3D12Device&>(Mox::GetDevice()).GetInner()->GetCopyableFootprints(&m_TextureDesc, 0, m_SubresourceDesc.size(), 0, nullptr, nullptr, nullptr, &requiredIntermediateSize);
-		return requiredIntermediateSize;
-	}
 
 }
 

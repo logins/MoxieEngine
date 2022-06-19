@@ -181,6 +181,12 @@ void RenderThread::ProcessRenderUpdates()
 
 	}
 
+	// Create textures
+	for (const Mox::TextureResourceRequest& texRequest : m_RenderUpdatesToProcess.m_TextureResourceRequests)
+	{
+		GraphicsAllocator::Get()->AllocateTextureResource(texRequest);
+	}
+
 	// Create proxies
 	std::vector<Mox::RenderProxy*> newProxies = GraphicsAllocator::Get()->CreateProxies(m_RenderUpdatesToProcess.m_ProxyRequests);
 
@@ -206,12 +212,14 @@ void RenderThread::ProcessRenderUpdates()
 
 	}
 
-	if (m_RenderUpdatesToProcess.m_StaticBufferUpdates.size() > 0)
+	if (m_RenderUpdatesToProcess.m_StaticBufferUpdates.size() > 0 || m_RenderUpdatesToProcess.m_TextureUpdates.size() > 0)
 	{
 		// Update static resources
 		Mox::CommandList& loadContentCmdList = GetCmdQueue()->GetAvailableCommandList();
 
-		Mox::GraphicsAllocator::Get()->UpdateStaticResources(loadContentCmdList, m_RenderUpdatesToProcess.m_StaticBufferUpdates);
+		Mox::GraphicsAllocator::Get()->UpdateStaticBufferResources(loadContentCmdList, m_RenderUpdatesToProcess.m_StaticBufferUpdates);
+
+		Mox::GraphicsAllocator::Get()->UpdateTextureResources(loadContentCmdList, m_RenderUpdatesToProcess.m_TextureUpdates);
 
 		GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
 

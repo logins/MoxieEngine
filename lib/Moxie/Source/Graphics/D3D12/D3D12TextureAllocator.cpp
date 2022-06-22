@@ -26,7 +26,7 @@ D3D12TextureAllocator::D3D12TextureAllocator(size_t InHeapSize, Mox::D3D12Resour
 
 }
 
-Mox::TextureResource& D3D12TextureAllocator::Allocate(const TextureResourceDesc& InDesc)
+Mox::TextureResource& D3D12TextureAllocator::Allocate(const TextureDesc& InDesc)
 {
 	if (!(InDesc.m_Type == Mox::TEXTURE_TYPE::TEX_2D || InDesc.m_Type == Mox::TEXTURE_TYPE::TEX_CUBE))
 	{

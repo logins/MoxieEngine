@@ -36,7 +36,7 @@ namespace Mox {
 		// TODO
 	}
 
-	void RequestTextureResource(Mox::Texture& InTexture, Mox::TextureResourceDesc& InDesc)
+	void RequestTextureResource(Mox::Texture& InTexture, Mox::TextureDesc& InDesc)
 	{
 		GetSimThreadUpdatesForRenderer().m_TextureResourceRequests.emplace_back(Mox::TextureResourceRequest{ &InTexture, InDesc });
 	}

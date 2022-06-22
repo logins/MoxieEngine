@@ -302,14 +302,28 @@ public:
 	ConstantBuffer() = delete;
 };
 
-struct TextureResourceDesc;
+
+
+struct TextureDesc
+{
+	size_t m_Width;
+	size_t m_Height;
+	size_t m_ArraySize;
+	size_t m_MipLevelsNum;
+	size_t m_PlanesNum;
+	BUFFER_FORMAT m_TexelFormat;
+	TEXTURE_TYPE m_Type;
+};
+
 struct TexDataInfo;
 class TextureResource;
 
 class Texture
 {
 public:
-	Texture(Mox::TextureResourceDesc& InDesc);
+	Texture(const wchar_t* InFilePath);
+
+	Texture(Mox::TextureDesc& InDesc);
 
 	// Note: Updates are meant to be stored in contiguous memory.
 	// After the update is done, the input memory will be deleted.
@@ -320,6 +334,8 @@ public:
 private:
 	// Pointer reserved for render thread access
 	Mox::TextureResource* m_Resource;
+
+	Mox::TextureDesc m_Desc;
 };
 
 
@@ -411,21 +427,10 @@ struct TexDataInfo
 	uint16_t m_SliceIndex;
 };
 
-struct TextureResourceDesc
-{
-	size_t m_Width;
-	size_t m_Height; 
-	size_t m_ArraySize; 
-	size_t m_MipLevelsNum;
-	size_t m_PlanesNum;
-	BUFFER_FORMAT m_TexelFormat;
-	TEXTURE_TYPE m_Type;
-};
-
 class TextureResource {
 
 public:
-	TextureResource(const Mox::TextureResourceDesc& InDesc, 
+	TextureResource(const Mox::TextureDesc& InDesc, 
 		Mox::Resource& InOwnerResource,	size_t InAllocationOffset, size_t InSize);
 
 	size_t GetGPUSize() const { return m_Size; };

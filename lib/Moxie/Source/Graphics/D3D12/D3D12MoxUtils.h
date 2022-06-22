@@ -74,6 +74,10 @@ namespace Mox {
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> SerializeAndCreateRootSignature(Microsoft::WRL::ComPtr<ID3D12Device2> InDevice, CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC* InRootSigDesc, D3D_ROOT_SIGNATURE_VERSION InVersion);
 
+	// Returns true if the loading was successful
+	bool LoadDDSTextureData(const char* InFilePath, TextureDesc& OutTexDesc, void*& OutLoadedDataPtr, size_t& OutLoadedDataSize, std::vector<Mox::TexDataInfo>& OutSubresInfo);
+
+
 	inline void ThrowIfFailed(HRESULT hr)
 	{
 		if (FAILED(hr))

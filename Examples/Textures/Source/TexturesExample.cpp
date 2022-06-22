@@ -22,7 +22,7 @@
 #include "Renderer.h"
 
 
-#define TEXTURES_EXAMPLE_SHADERS_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
+//#define TEXTURES_EXAMPLE_SHADERS_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
 #define TEXTURES_EXAMPLE_CONTENT_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/Content/NAME)
 
 
@@ -45,6 +45,16 @@ int main()
 
 void TexturesExampleApplication::OnInitializeContent()
 {
+	// Load Content
+
+	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
+	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
+
+	Mox::TextureDesc TexDesc;
+	void* TexData;
+
+	m_Cubemap = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMap.dds));
+
 	/*
 
 	// Load Content

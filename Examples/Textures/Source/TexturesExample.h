@@ -34,27 +34,14 @@ private:
 	// but instead to a draw command object for the current entity being drawn.
 	// In that case we would create the draw command object with references instead of raw pointers.
 	// Vertex buffer for the cube
-	Mox::ConstantBuffer* m_VertexBuffer;
-	Mox::VertexBufferView* m_VertexBufferView;
+	Mox::VertexBuffer* m_VertexBuffer;
 	// Index buffer for the cube
-	Mox::ConstantBuffer* m_IndexBuffer;
-	Mox::IndexBufferView* m_IndexBufferView;
+	Mox::IndexBuffer* m_IndexBuffer;
 
 	// Texture for the cubemap
-	Mox::Texture* m_Cubemap;
-	Mox::ShaderResourceView* m_CubemapView;
-	// Textures for the generated mips
-	Mox::Texture* m_CubemapWithMips;
-	struct GenerateMipsCB
-	{
-		Mox::Vector2f Mip1Size;
-	};
-
-	Mox::PipelineState* m_PipelineState;
+	std::unique_ptr<Mox::Texture> m_Cubemap;
 
 	Mox::Entity* m_CubeEntity;
-
-	Mox::Matrix4f m_MvpMatrix;
 
 	// Vertex data for colored cube
 	struct VertexPosColor
@@ -64,14 +51,14 @@ private:
 	};
 
 	const VertexPosColor m_VertexData[8] = {
-		{ Mox::Vector3f(-1.f, -1.f, -1.f),Mox::Vector3f(-1.f, -1.f, -1.f) },	// 0
+		{ Mox::Vector3f(-1.f, -1.f, -1.f),Mox::Vector3f(-1.f, -1.f, -1.f) },// 0
 		{ Mox::Vector3f(-1.f, 1.f, -1.f),Mox::Vector3f(-1.f, 1.f, -1.f)  },	// 1
 		{ Mox::Vector3f(1.f, 1.f, -1.f), Mox::Vector3f(1.f, 1.f, -1.f)   },	// 2
 		{ Mox::Vector3f(1.f, -1.f, -1.f),Mox::Vector3f(1.f, -1.f, -1.f)  },	// 3
 		{ Mox::Vector3f(-1.f, -1.f, 1.f),Mox::Vector3f(-1.f, -1.f, 1.f)  },	// 4
 		{ Mox::Vector3f(-1.f, 1.f, 1.f), Mox::Vector3f(-1.f, 1.f, 1.f)  },	// 5
-		{ Mox::Vector3f(1.f, 1.f, 1.f),  Mox::Vector3f(1.f, 1.f, 1.f)   },		// 6
-		{ Mox::Vector3f(1.f, -1.f, 1.f), Mox::Vector3f(1.f, -1.f, 1.f)  }		// 7
+		{ Mox::Vector3f(1.f, 1.f, 1.f),  Mox::Vector3f(1.f, 1.f, 1.f)   },	// 6
+		{ Mox::Vector3f(1.f, -1.f, 1.f), Mox::Vector3f(1.f, -1.f, 1.f)  }	// 7
 	};
 
 	const unsigned short m_IndexData[36] = {
@@ -86,9 +73,6 @@ private:
 protected:
 
 	virtual void UpdateContent(float InDeltaTime) override;
-
-
-
 
 };
 

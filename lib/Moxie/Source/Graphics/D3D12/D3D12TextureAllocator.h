@@ -20,7 +20,7 @@ class D3D12TextureAllocator
 public:
 	D3D12TextureAllocator(size_t InHeapSize, Mox::D3D12Resource& InStagingResource);
 
-	Mox::TextureResource& Allocate(const TextureResourceDesc& InDesc);
+	Mox::TextureResource& Allocate(const TextureDesc& InDesc);
 
 	void UpdateContent(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTexUpdates);
 

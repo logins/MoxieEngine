@@ -99,7 +99,7 @@ namespace Mox {
 		Mox::ReleaseResourceForBuffer(*this);
 	}
 
-	TextureResource::TextureResource(const Mox::TextureResourceDesc& InDesc, 
+	TextureResource::TextureResource(const Mox::TextureDesc& InDesc, 
 		Mox::Resource& InOwnerResource, size_t InAllocationOffset, size_t InSize)
 		: m_OwnerResource(InOwnerResource),
 		m_GpuPtr(InOwnerResource.GetGpuData() + InAllocationOffset),
@@ -115,10 +115,25 @@ namespace Mox {
 
 	}
 
-	Texture::Texture(TextureResourceDesc& InDesc)
+	Texture::Texture(TextureDesc& InDesc)
+		: m_Desc(InDesc)
 	{
 		Mox::RequestTextureResource(*this, InDesc);
 
+	}
+
+	Texture::Texture(const wchar_t* InFilePath)
+	{
+		/* TODO FIX THIS
+		
+		// Load texture data from file
+		Mox::FileLoader::Get().LoadTextureDataFromFile
+		
+		// Ask for tex resource creation
+		Mox::RequestTextureResource(*this, m_Desc);
+		// Update tex resource content
+		UpdateContent(...);
+		*/
 	}
 
 	void Texture::UpdateContent(void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo)

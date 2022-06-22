@@ -22,13 +22,6 @@
 namespace Mox
 {
 
-	void PrintHello()
-	{
-		std::cout << "Hello From Mox Library!" << std::endl;
-
-		Mox::ThisIsMyInternalFunction();
-	}
-
 	ComPtr<IDXGIAdapter4> GetMainAdapter(bool InUseWarp)
 	{
 		// Note: warp is a virtual platform that provides backward compatibility to DX12 for older graphics devices.
@@ -295,6 +288,47 @@ namespace Mox
 		ThrowIfFailed(InDevice->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
 
 		return rootSignature;
+	}
+
+	bool LoadDDSTextureData(const char* InFilePath, 
+		TextureDesc& OutTexDesc, void*& OutLoadedDataPtr, size_t& OutLoadedDataSize, std::vector<TexDataInfo>& OutSubresInfo)
+	{
+		// TODO Validate file is present and width .dds extension
+		/*
+		if (texture)
+		{
+			*texture = nullptr;
+		}
+		if (alphaMode)
+		{
+			*alphaMode = DDS_ALPHA_MODE_UNKNOWN;
+		}
+		if (isCubeMap)
+		{
+			*isCubeMap = false;
+		}
+
+		if (!d3dDevice || !fileName || !texture)
+		{
+			return E_INVALIDARG;
+		}
+
+		const DDS_HEADER* header = nullptr;
+		const uint8_t* bitData = nullptr;
+		size_t bitSize = 0;
+
+		HRESULT hr = LoadTextureDataFromFile(fileName,
+			ddsData,
+			&header,
+			&bitData,
+			&bitSize
+		);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+*/
+		return false;
 	}
 
 	void D3D12VertexBufferView::ReferenceResource(Mox::BufferResource& InVB)

@@ -25,8 +25,6 @@
 #include "MoxMeshComponent.h"
 
 
-#define PART3_SHADERS_PATH(NAME) LQUOTE(DYN_BUF_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
-
 int main()
 {
 	std::cout << "Dynamic Buffer Example" << std::endl;

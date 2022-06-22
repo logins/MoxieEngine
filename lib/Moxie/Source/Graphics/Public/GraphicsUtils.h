@@ -72,7 +72,7 @@ namespace Mox {
 	struct TextureResourceRequest
 	{
 		Mox::Texture* m_TargetTexture;
-		TextureResourceDesc m_Desc;
+		TextureDesc m_Desc;
 	};
 
 	struct TextureResourceUpdate
@@ -137,7 +137,7 @@ namespace Mox {
 	// Stores a request of releasing the buffer resource associated with the given buffer
 	void ReleaseResourceForBuffer(Mox::ConstantBuffer& InBuffer);
 
-	void RequestTextureResource(Mox::Texture& InTexture, TextureResourceDesc& InDesc);
+	void RequestTextureResource(Mox::Texture& InTexture, TextureDesc& InDesc);
 
 	void RequestRenderProxyForEntity(Mox::Entity& InEntity);
 

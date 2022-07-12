@@ -1,12 +1,12 @@
 [submodule "lib/ThirdParty/eigen"]
 	path = lib/ThirdParty/eigen
 	url = https://gitlab.com/libeigen/eigen.git
-	ignore = untracked
+	ignore = dirty
 [submodule "lib/ThirdParty/DirectXTex"]
 	path = lib/ThirdParty/DirectXTex
 	url = https://github.com/microsoft/DirectXTex.git
-	ignore = untracked
+	ignore = dirty
 [submodule "lib/ThirdParty/entt"]
 	path = lib/ThirdParty/entt
 	url = https://github.com/skypjack/entt.git
-	ignore = untracked
+	ignore = dirty

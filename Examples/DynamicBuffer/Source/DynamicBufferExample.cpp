@@ -146,7 +146,7 @@ void DynBufExampleApp::UpdateContent(float InDeltaTime)
 	// Updating color modifier
 	static float progress, counter = 0.f;
 	counter = 0.75f + std::sin(progress) / 2.f;
-	progress += 0.1f * InDeltaTime;
+	progress += 0.3f * InDeltaTime;
 
 	m_ColorModBuffer->SetData(&counter, sizeof(float)); // TODO template SetData
 

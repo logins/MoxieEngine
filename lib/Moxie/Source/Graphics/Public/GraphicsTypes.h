@@ -97,6 +97,7 @@ enum class BUFFER_FORMAT : uint8_t {
 	R16_UINT, // Single channel 16 bits
 	R32G32B32_FLOAT,
 	R8G8B8A8_UNORM,
+	B8G8R8A8_UNORM,
 	D32_FLOAT,
 	BC1_UNORM
 };
@@ -420,7 +421,7 @@ enum class TEXTURE_ADDRESS_MODE : int {
 // Used to describe a texture subresource data on CPU
 struct TexDataInfo
 {
-	void* m_Location;
+	const void* m_Location;
 	uint32_t m_RowSize;
 	uint32_t m_TotalSize;
 	uint16_t m_MipLevel;

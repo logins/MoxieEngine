@@ -10,6 +10,7 @@
 #include "GraphicsAllocator.h"
 #include "MoxMath.h"
 #include "MoxUtils.h"
+#include "Public/MoxResourceLoader.h"
 
 namespace Mox {
 
@@ -124,11 +125,17 @@ namespace Mox {
 
 	Texture::Texture(const wchar_t* InFilePath)
 	{
-		/* TODO FIX THIS
+		
 		
 		// Load texture data from file
-		Mox::FileLoader::Get().LoadTextureDataFromFile
-		
+		Mox::TextureDesc texDesc;
+		std::vector<Mox::TexDataInfo> subResInfo;
+		const void* texData;
+		size_t texEntireSize;
+		Mox::ResourceLoader::Get().LoadTextureData(
+			InFilePath, texDesc, texData, texEntireSize, subResInfo);
+
+		/* TODO FIX THIS
 		// Ask for tex resource creation
 		Mox::RequestTextureResource(*this, m_Desc);
 		// Update tex resource content

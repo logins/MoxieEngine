@@ -28,7 +28,8 @@ namespace Mox {
 		Mox::ThrowIfFailed(d3d12Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_D3D12DescHeap)));
 
 		m_FirstCpuDesc = GetInner()->GetCPUDescriptorHandleForHeapStart();
-		m_FirstGpuDesc = GetInner()->GetGPUDescriptorHandleForHeapStart();
+		if (IsShaderVisible)
+			m_FirstGpuDesc = GetInner()->GetGPUDescriptorHandleForHeapStart();
 
 		// Set allocators
 		int32_t staticAllocatorSize = InDescriptorsNum * InStaticDescPercentage;

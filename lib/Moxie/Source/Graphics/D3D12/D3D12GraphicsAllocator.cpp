@@ -89,9 +89,11 @@ namespace Mox {
 		return m_DynamicBufferAllocator->Allocate(InSize);
 	}
 
-	Mox::TextureResource& D3D12GraphicsAllocator::AllocateTextureResource(const Mox::TextureResourceRequest& InTexDesc)
+	void D3D12GraphicsAllocator::AllocateResourceForTexture(const Mox::TextureResourceRequest& InTexResRequest)
 	{
-		return m_TextureAllocator->Allocate(InTexDesc.m_Desc);
+		Mox::TextureResource& tesRes = m_TextureAllocator->Allocate(InTexResRequest.m_Desc);
+
+		InTexResRequest.m_TargetTexture->SetResource(tesRes);
 	}
 
 	Mox::VertexBufferView& D3D12GraphicsAllocator::AllocateVertexBufferView(Mox::BufferResource& InVBResource)

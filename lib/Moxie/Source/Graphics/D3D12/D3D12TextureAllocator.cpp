@@ -35,13 +35,13 @@ Mox::TextureResource& D3D12TextureAllocator::Allocate(const TextureDesc& InDesc)
 
 	D3D12_RESOURCE_DESC texResDesc{
 		Mox::TextureTypeToD3D12(InDesc.m_Type),
-		m_AllocationsAlignment,
+		D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT, // Resource placement alignment is mandatory for texture resources that do not use MSAA and greater than 4KB in size
 		InDesc.m_Width,
 		InDesc.m_Height,
 		InDesc.m_ArraySize,
 		InDesc.m_MipLevelsNum,
 		Mox::BufferFormatToD3D12(InDesc.m_TexelFormat),
-		DXGI_SAMPLE_DESC{0,0}, // No multisample supported
+		DXGI_SAMPLE_DESC{1,0}, // No multisample supported
 		D3D12_TEXTURE_LAYOUT_UNKNOWN, // During creation, the driver chooses the most efficient layout based on other resource properties
 		D3D12_RESOURCE_FLAG_NONE
 	};
@@ -92,11 +92,9 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 		std::vector <uint32_t> totalBytesVector(subresourceUpdatesNum);
 
 		// Note: D3D12_SUBRESOURCE_INFO holds information about the updates on CPU side we want to transfer to the target subresources on GPU!
-		std::vector<D3D12_SUBRESOURCE_DATA> subresourceDataVector;
-		subresourceDataVector.resize(subresourceUpdatesNum);
+		std::vector<D3D12_SUBRESOURCE_DATA> subresourceDataVector(subresourceUpdatesNum);
 
-		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> mip0Footprints;
-		mip0Footprints.resize(subresourceUpdatesNum);
+		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> mip0Footprints(subresourceUpdatesNum);
 
 		// Layout for mip0 of every slice is the same, what changes is only the parent resource offset
 		for (int i = 0; i < subresourceUpdatesNum; ++i)

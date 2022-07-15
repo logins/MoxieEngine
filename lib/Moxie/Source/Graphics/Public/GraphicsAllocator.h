@@ -51,7 +51,7 @@ public:
 
 	virtual Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) = 0;
 
-	virtual Mox::TextureResource& AllocateTextureResource(const Mox::TextureResourceRequest& InTexDesc) = 0;
+	virtual void AllocateResourceForTexture(const Mox::TextureResourceRequest& InTexDesc) = 0;
 
 	virtual void UpdateTextureResources(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTextureUpdates) = 0;
 

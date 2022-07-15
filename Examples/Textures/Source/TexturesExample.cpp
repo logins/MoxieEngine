@@ -53,7 +53,17 @@ void TexturesExampleApplication::OnInitializeContent()
 	Mox::TextureDesc TexDesc;
 	void* TexData;
 
+	// Create the cubemap texture
 	m_Cubemap = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMap.dds));
+
+	// Set it as shader parameter
+	/*
+	std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>> meshShaderParamDefinitions;
+
+	std::unique_ptr<Mox::MeshComponent> cubeMesh = std::make_unique<Mox::MeshComponent>(
+		Mox::DrawableCreationInfo{ 
+			m_CubeEntity, m_VertexBuffer, m_IndexBuffer, std::move(meshShaderParamDefinitions) });
+	*/
 
 	/*
 

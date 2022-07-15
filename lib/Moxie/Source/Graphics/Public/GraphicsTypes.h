@@ -328,10 +328,12 @@ public:
 
 	// Note: Updates are meant to be stored in contiguous memory.
 	// After the update is done, the input memory will be deleted.
-	void UpdateContent(void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo);
+	void UpdateContent(const void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo);
 
 	// Reserved for render thread
 	Mox::TextureResource* GetResource() const { return m_Resource; }
+	void SetResource(Mox::TextureResource& InRes) { m_Resource = &InRes; }
+
 private:
 	// Pointer reserved for render thread access
 	Mox::TextureResource* m_Resource;

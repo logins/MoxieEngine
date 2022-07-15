@@ -128,22 +128,21 @@ namespace Mox {
 		
 		
 		// Load texture data from file
-		Mox::TextureDesc texDesc;
 		std::vector<Mox::TexDataInfo> subResInfo;
 		const void* texData;
 		size_t texEntireSize;
 		Mox::ResourceLoader::Get().LoadTextureData(
-			InFilePath, texDesc, texData, texEntireSize, subResInfo);
+			InFilePath, m_Desc, texData, texEntireSize, subResInfo);
 
-		/* TODO FIX THIS
 		// Ask for tex resource creation
 		Mox::RequestTextureResource(*this, m_Desc);
+
 		// Update tex resource content
-		UpdateContent(...);
-		*/
+		UpdateContent(texData, texEntireSize, subResInfo);
+		
 	}
 
-	void Texture::UpdateContent(void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo)
+	void Texture::UpdateContent(const void* InUpdateData, size_t InUpdateSize, std::vector<Mox::TexDataInfo>& InUpdateInfo)
 	{
 		// Note: we are assuming UpdateInfo data is stored in contiguous memory
 

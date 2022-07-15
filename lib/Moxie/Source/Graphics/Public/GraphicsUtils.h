@@ -80,7 +80,7 @@ namespace Mox {
 		// Pointer to the texture data to transfer over the GPU.
 		// When the transfer is complete, the request will 
 		// automatically call delete on this pointer.
-		void* m_TempData;
+		const void* m_TempData;
 		size_t m_UpdateSize;
 		std::vector<Mox::TexDataInfo> m_UpdateDesc;
 		Mox::Texture* m_TargetTexture;

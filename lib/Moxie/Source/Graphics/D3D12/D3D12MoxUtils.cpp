@@ -489,7 +489,7 @@ namespace Mox
 		}
 		else if (InResType == D3D12_RES_TYPE::Texture)
 		{
-			m_GpuPtr = m_D3D12Resource->GetGPUVirtualAddress();
+			m_GpuPtr = 0; // Texture resources do not hold a GPU virtual address
 			m_Alignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
 			m_SubresourcesNum = m_Desc.MipLevels * m_Desc.DepthOrArraySize;
 
@@ -497,6 +497,8 @@ namespace Mox
 			m_SubresourceFootprints.resize(m_SubresourcesNum);
 			m_RowsNumVector.resize(m_SubresourcesNum);
 			m_RowSizeVector.resize(m_SubresourcesNum);
+			m_TotalBytesVector.resize(m_SubresourcesNum);
+
 
 			static_cast<Mox::D3D12Device&>(GetDevice()).GetInner()->GetCopyableFootprints(
 				&m_Desc,

@@ -57,7 +57,7 @@ public:
 
 	Mox::BufferResource& AllocateDynamicBuffer(uint32_t InSize) override;
 
-	Mox::TextureResource& AllocateTextureResource(const Mox::TextureResourceRequest& InTexDesc) override;
+	void AllocateResourceForTexture(const Mox::TextureResourceRequest& InTexResRequest) override;
 
 	Mox::VertexBufferView& AllocateVertexBufferView(Mox::BufferResource& InVBResource) override;
 

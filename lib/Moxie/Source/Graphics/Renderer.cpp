@@ -184,7 +184,7 @@ void RenderThread::ProcessRenderUpdates()
 	// Create textures
 	for (const Mox::TextureResourceRequest& texRequest : m_RenderUpdatesToProcess.m_TextureResourceRequests)
 	{
-		GraphicsAllocator::Get()->AllocateTextureResource(texRequest);
+		GraphicsAllocator::Get()->AllocateResourceForTexture(texRequest);
 	}
 
 	// Create proxies

@@ -60,14 +60,6 @@ void DynBufExampleApp::OnInitializeContent()
 
 	std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>> meshShaderParamDefinitions;
 
-	// Creating the buffer for the model matrix
-	
-
-
-
-
-
-
 	// Creating buffer for the color mod
 	m_ColorModBuffer = std::make_unique<Mox::ConstantBuffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(float));
 	float colorMod = .5f;

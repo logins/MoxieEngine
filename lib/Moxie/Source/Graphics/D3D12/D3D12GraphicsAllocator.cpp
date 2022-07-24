@@ -215,7 +215,7 @@ namespace Mox {
 	{
 		for (const Mox::DrawableCreationInfo& drawableReq : InRequests)
 		{
-			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(*drawableReq.m_VertexBuffer, *drawableReq.m_IndexBuffer, drawableReq.m_ShaderParameters));
+			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(*drawableReq.m_VertexBuffer, *drawableReq.m_IndexBuffer, drawableReq.m_BufferShaderParameters));
 			
 			drawableReq.m_OwningEntity->GetRenderProxy()->AddDrawable(m_DrawableArray.back().get());
 		}
@@ -267,6 +267,10 @@ namespace Mox {
 
 	void D3D12GraphicsAllocator::Initialize()
 	{
+		
+		Mox::D3D12NullCbv::SetStaticInstance();
+
+
 		m_DescHeapFactory = std::make_unique<Mox::D3D12DescHeapFactory>();
 
 		// Allocate an empty resource and create the dynamic buffer allocator on it

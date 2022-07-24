@@ -18,9 +18,7 @@ namespace Mox {
 	struct ConstantBufferView;
 
 	using CbvEntry = std::tuple<uint32_t, Mox::ConstantBufferView*>;
-	/*struct CbvEntry {
-		uint32_t ParamHash; Mox::ConstantBufferView* Descriptor;
-	};*/
+	using SrvEntry = std::tuple<uint32_t, Mox::ShaderResourceView*>;
 
 	/*
 	DrawCommand abstracts a single draw call for a single object on a single render pass.
@@ -28,9 +26,11 @@ namespace Mox {
 	*/
 	struct DrawCommand
 	{
-		DrawCommand(Mox::VertexBufferView& InVb, Mox::IndexBufferView& InIb, Mox::PipelineState& InPs, std::vector<CbvEntry> InRe)
+		DrawCommand(Mox::VertexBufferView& InVb, Mox::IndexBufferView& InIb, Mox::PipelineState& InPs, 
+			std::vector<CbvEntry> InCbvs, std::vector<SrvEntry> InSrvs = std::vector<SrvEntry>())
 			: m_VertexBufferView(InVb), m_IndexBufferView(InIb), m_PipelineState(InPs), 
-			m_ResourceEntries( std::move(InRe) ) { }; // Note: This is good for both lvalues and rvalues passes to InRe. 
+			// Note: This is good for both lvalues and rvalues passes to InRe. 
+			m_CbvResourceEntries( std::move(InCbvs)), m_SrvResourceEntries( std::move(InSrvs)) { }; 
 		// The reason is:
 		// - If we pass an lvalue, InRe gets COPY constructed and then moved to m_ResourceEntries
 		// - If we pass an rvalue, InRe gets MOVE constructed and then moved to m_ResourceEntries
@@ -43,8 +43,9 @@ namespace Mox {
 
 		Mox::PipelineState& m_PipelineState;
 
-		// TODO later make this valid also for srv and uav
-		std::vector<CbvEntry> m_ResourceEntries;
+		std::vector<CbvEntry> m_CbvResourceEntries;
+
+		std::vector<SrvEntry> m_SrvResourceEntries;
 	};
 
 }

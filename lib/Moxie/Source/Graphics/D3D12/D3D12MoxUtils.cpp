@@ -450,6 +450,8 @@ namespace Mox
 		ReferenceBuffer(InBuffer);
 	}
 
+	D3D12ConstantBufferView::D3D12ConstantBufferView() = default;
+
 	void D3D12ConstantBufferView::ReferenceBuffer(Mox::BufferResource& InBuffer)
 	{
 		if (!m_CpuAllocatedRange)
@@ -472,11 +474,37 @@ namespace Mox
 
 	void D3D12ConstantBufferView::RebuildResourceReference()
 	{
-		ReferenceBuffer(m_ReferencedBuffer);
+		ReferenceBuffer(*m_ReferencedBuffer);
 	}
 
 
-	D3D12Resource::D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType, size_t InSize) 
+	D3D12ConstantBufferView::~D3D12ConstantBufferView() = default;
+
+	void D3D12NullCbv::SetStaticInstance()
+	{
+		if (!m_NullCbv)
+		{
+			m_NullCbv = std::make_unique<Mox::D3D12NullCbv>();
+		}
+	}
+
+
+	D3D12NullCbv::D3D12NullCbv()
+	{
+		if (!m_CpuAllocatedRange)
+		{
+			// Allocate descriptor in CPU descriptor heap
+
+			m_CpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsCpuHeap().AllocateStaticRange(1);
+		}
+
+		// Instantiate View
+		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
+
+		d3d12Device.GetInner()->CreateConstantBufferView(nullptr, m_CpuAllocatedRange->m_FirstCpuHandle);
+	}
+
+	D3D12Resource::D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType, size_t InSize)
 		: m_D3D12Resource(InD3D12Res),  m_Desc(InD3D12Res->GetDesc())
 	{
 		
@@ -536,6 +564,30 @@ namespace Mox
 	}
 
 
+
+
+	void D3D12NullSrv::SetStaticInstance()
+	{
+		if (!m_NullSrv)
+		{
+			m_NullSrv = std::make_unique<Mox::D3D12NullSrv>();
+		}
+	}
+
+	D3D12NullSrv::D3D12NullSrv()
+	{
+		if (!m_CpuAllocatedRange)
+		{
+			// Allocate descriptor in CPU descriptor heap
+
+			m_CpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsCpuHeap().AllocateStaticRange(1);
+		}
+
+		// Instantiate View
+		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
+
+		d3d12Device.GetInner()->CreateShaderResourceView(nullptr, nullptr, m_CpuAllocatedRange->m_FirstCpuHandle);
+	}
 
 }
 

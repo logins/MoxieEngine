@@ -20,10 +20,25 @@ namespace Mox {
 
 
 	// SPH = Shader Parameter Hash
-	static const SpHash SPH_mvp = Mox::HashSpName("mvp");
+	static constexpr SpHash SPH_mvp = Mox::HashSpName("mvp");
 
 	// Color modifier for the pixel shader
-	static const SpHash SPH_c_mod = Mox::HashSpName("c_mod");
+	static constexpr SpHash SPH_c_mod = Mox::HashSpName("c_mod");
+
+	// Cubemap texture
+	static constexpr SpHash SPH_cube_tex = Mox::HashSpName("cube_tex");
+
+	enum DRAW_FEATURES : uint8_t
+	{
+		COLOR_MOD = 1,
+		CUBE_TEX = 2
+	};
+
+	// Hashmap holding information about shader parameters that the pipeline requires for drawing.
+	// This map is tied to the current pipeline state used. At the moment here in base pass we have only one,
+	// but in a generic case we can have multiple possible pipeline states, which can have same shader parameters
+	// placed in different root locations.
+	static std::unordered_map<Mox::SpHash, Mox::ShaderParameterDefinition> m_ShaderParamDefinitionMap;
 
 	BasePass::~BasePass()
 	{
@@ -32,6 +47,13 @@ namespace Mox {
 
 	void BasePass::SetupPass()
 	{
+		// Note: in a more serious context this information should come from the shader reflection system.
+		m_ShaderParamDefinitionMap = {
+			{SPH_mvp, {0, "mvp", Mox::SHADER_PARAM_TYPE::CONSTANT_BUFFER, 0, 0}},
+			{SPH_c_mod, {1, "c_mod", Mox::SHADER_PARAM_TYPE::CONSTANT_BUFFER, 0, 1}},
+			{SPH_cube_tex, {2, "cube_tex", Mox::SHADER_PARAM_TYPE::TEXTURE, 0, 1}}
+		};
+
 		//Create Root Signature
 		// Allow Input layout access to shader resources (in out case, the MVP matrix) 
 		// and deny it to other stages (small optimization)
@@ -47,13 +69,16 @@ namespace Mox {
 		// Mvp matrix is set as a root descriptor (size of 2 d-words) and it will be used by the vertex shader
 		Mox::PipelineState::RESOURCE_BINDER_PARAM mvpMatrix;
 		//mvpMatrix.InitAsConstants(sizeof(Eigen::Matrix4f) / 4, 0, 0, Mox::SHADER_VISIBILITY::SV_VERTEX); // Using a single 32-bit constant root parameter (MVP matrix) that is used by the vertex shader	
-		mvpMatrix.InitAsTableCBVRange(1, 0, 0, Mox::SHADER_VISIBILITY::SV_VERTEX);
+
+		const Mox::ShaderParameterDefinition& mvpSpInfo = m_ShaderParamDefinitionMap[SPH_mvp];
+		mvpMatrix.InitAsTableCBVRange(1, mvpSpInfo.m_RegisterIndex, mvpSpInfo.m_SpaceIndex, Mox::SHADER_VISIBILITY::SV_VERTEX);
 
 		resourceBinderDesc.Params.emplace(resourceBinderDesc.Params.end(), std::move(mvpMatrix));
 
 		// Constant buffer ColorModifierCB
 		Mox::PipelineState::RESOURCE_BINDER_PARAM colorModifierParam;
-		colorModifierParam.InitAsTableCBVRange(1, 0, 1, Mox::SHADER_VISIBILITY::SV_PIXEL);
+		const Mox::ShaderParameterDefinition& cModSpInfo = m_ShaderParamDefinitionMap[SPH_c_mod];
+		colorModifierParam.InitAsTableCBVRange(1, cModSpInfo.m_RegisterIndex, cModSpInfo.m_SpaceIndex, Mox::SHADER_VISIBILITY::SV_PIXEL);
 
 		resourceBinderDesc.Params.emplace(resourceBinderDesc.Params.end(), std::move(colorModifierParam));
 
@@ -96,29 +121,6 @@ namespace Mox {
 
 	}
 
-	std::vector<CbvEntry> GenerateResourceEntriesForMesh(const Mox::Drawable& InMesh)
-	{
-		std::vector<CbvEntry> resourceEntries;
-
-		// We just need to store the reference to the mvp view, since the other info,
-		// such as the root index and the size of data, is already known and expected by the pass.
-
-		// Note: we are assuming to find entries for relative parameters every time
-		std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*>::const_iterator mvpParamValue = InMesh.m_ShaderParameters.find(SPH_mvp);
-
-		Check(mvpParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the MVP shader param value for this mesh
-
-		resourceEntries.emplace_back(0, static_cast<Mox::ConstantBufferView*>(mvpParamValue->second->GetResource()->GetView()));
-
-		std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*>::const_iterator cModParamValue = InMesh.m_ShaderParameters.find(SPH_c_mod);
-
-		Check(cModParamValue != InMesh.m_ShaderParameters.cend()) // If this triggers, we are missing the c_mod shader param value for this mesh
-
-		resourceEntries.emplace_back(1, static_cast<Mox::ConstantBufferView*>(cModParamValue->second->GetResource()->GetView()));
-
-		return std::move(resourceEntries);
-	}
-
 	void BasePass::ProcessRenderProxy(Mox::RenderProxy& InProxy)
 	{
 		// Note: for now we assume the proxy is relevant for this pass
@@ -126,6 +128,59 @@ namespace Mox {
 		// Generate draw command from each mesh to later use it on draw
 		for (const Mox::Drawable* curMesh : InProxy.m_Meshes)
 		{	
+			// featuresFiled is a bitfield intended as a cheap way to 
+			// enable selective features inside the single base pass shader.
+			// 
+			uint32_t featuresFiled = 0;
+
+			// ----- Generate Srv entries
+			std::vector<SrvEntry> srvEntries;
+
+			std::unordered_map<Mox::SpHash, Mox::Texture*>::const_iterator cubeTexParamValue = curMesh->m_TextureShaderParameters.find(SPH_cube_tex);
+
+			Mox::ShaderResourceView* CubeTexSrv;
+
+			if (cubeTexParamValue != curMesh->m_TextureShaderParameters.cend())
+			{
+				featuresFiled |= DRAW_FEATURES::CUBE_TEX;
+				CubeTexSrv = cubeTexParamValue->second->GetResource()->GetView();
+			}
+			else
+			{
+				// Bind null descriptor
+				CubeTexSrv = Mox::ShaderResourceView::GetNull();
+			}
+
+			srvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_cube_tex].PipelineRootIndex, CubeTexSrv);
+
+			// ----- Generate Cbv entries
+			std::vector<CbvEntry> cbvEntries;
+
+			// We just need to store the reference to the mvp view, since the other info,
+			// such as the root index and the size of data, is already known and expected by the pass.
+
+			// Note: we are assuming to find entries for relative parameters every time
+			std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*>::const_iterator mvpParamValue = curMesh->m_BufferShaderParameters.find(SPH_mvp);
+
+			Check(mvpParamValue != curMesh->m_BufferShaderParameters.cend()) // If this triggers, we are missing the MVP shader param value for this mesh
+
+			cbvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_mvp].PipelineRootIndex, static_cast<Mox::ConstantBufferView*>(mvpParamValue->second->GetResource()->GetView()));
+
+			std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*>::const_iterator cModParamValue = curMesh->m_BufferShaderParameters.find(SPH_c_mod);
+
+			Mox::ConstantBufferView* cmodCbv;
+			if (cModParamValue != curMesh->m_BufferShaderParameters.cend())
+			{
+				featuresFiled |= DRAW_FEATURES::COLOR_MOD;
+				cmodCbv = static_cast<Mox::ConstantBufferView*>(cModParamValue->second->GetResource()->GetView());
+			}
+			else
+			{
+				cmodCbv = Mox::ConstantBufferView::GetNull();
+			}
+
+			cbvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_c_mod].PipelineRootIndex, cmodCbv);
+
 			m_DrawCommands.emplace_back(
 
 				static_cast<Mox::VertexBufferView&>(*curMesh->m_VertexBuffer.GetResource()->GetView()),
@@ -134,7 +189,9 @@ namespace Mox {
 
 				*m_PipelineState,
 
-				GenerateResourceEntriesForMesh(*curMesh)
+				cbvEntries,
+
+				srvEntries
 			
 			);
 		}
@@ -153,7 +210,7 @@ namespace Mox {
 			// Checking if we have all the descriptors on gpu we need
 			Mox::ConstantBufferView* curCbv;
 			uint32_t rootIdx;
-			for(const CbvEntry & curCbvEntry : dc.m_ResourceEntries)
+			for(const CbvEntry & curCbvEntry : dc.m_CbvResourceEntries)
 			{
 				auto [rootIdx, curCbv] = curCbvEntry;
 				// If the view is Gpu allocated, just reference the view in the command list

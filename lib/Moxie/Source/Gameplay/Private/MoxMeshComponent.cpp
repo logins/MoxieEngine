@@ -26,9 +26,9 @@ namespace Mox {
 		m_MvpBuffer(std::make_unique<Mox::ConstantBuffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(Mox::Matrix4f)))
 	{
 
-		InCreationInfo.m_ShaderParameters.emplace_back(Mox::HashSpName("mvp"), m_MvpBuffer.get());
+		InCreationInfo.m_BufferShaderParameters.emplace_back(Mox::HashSpName("mvp"), m_MvpBuffer.get());
 
-		m_ShaderParameters = InCreationInfo.m_ShaderParameters;
+		m_ShaderParameters = InCreationInfo.m_BufferShaderParameters;
 		
 		Matrix4f newMvpMatrix = Application::Get()->GetViewProjectionMatrix() * m_OwnerEntity.GetModelMatrix();
 

@@ -218,7 +218,8 @@ protected:
 	Mox::ResourceView* m_DefaultView;
 
 private:
-	//BufferResource() = delete;
+
+	BufferResource() = delete;
 	// A buffer resource is unique in its data and cannot be copied
 	BufferResource& operator=(const BufferResource&) = delete;
 	BufferResource(const BufferResource&) = delete;
@@ -360,16 +361,31 @@ struct ConstantBufferView : public ResourceView {
 
 	virtual void ReferenceBuffer(Mox::BufferResource& InBuffer) = 0;
 
+	static ConstantBufferView* GetNull();
+	
 protected:
-	ConstantBufferView(Mox::BufferResource& InBufffer) : m_ReferencedBuffer(InBufffer) { };
+	ConstantBufferView();
 
-	Mox::BufferResource& m_ReferencedBuffer;
+	ConstantBufferView(Mox::BufferResource& InBufffer) : m_ReferencedBuffer(&InBufffer) { };
+
+	Mox::BufferResource* m_ReferencedBuffer;
+
+	// Derived platform-specific class will need to initialize it
+	static std::unique_ptr<ConstantBufferView> m_NullCbv;
 };
 
 struct ShaderResourceView : public ResourceView {
 	virtual void InitAsTex2DOrCubemap(Mox::TextureResource& InTexture) = 0;
+
+	static ShaderResourceView* GetNull() { return m_NullSrv.get(); }
+
 protected:
 	ShaderResourceView(Mox::Resource& InResource) { }
+
+	ShaderResourceView() { }
+
+	// Derived platform-specific class will need to initialize it
+	static std::unique_ptr<ShaderResourceView> m_NullSrv;
 };
 
 struct UnorderedAccessView : public ResourceView {
@@ -446,6 +462,8 @@ public:
 
 	Mox::Resource& GetOwnerResource() const { return m_OwnerResource; }
 
+	Mox::ShaderResourceView* GetView() const { return m_DefaultView; }
+
 protected:
 	Mox::Resource& m_OwnerResource;
 	Mox::GPU_V_ADDRESS m_GpuPtr;
@@ -457,6 +475,8 @@ protected:
 	uint16_t        m_PlanesNum;
 	BUFFER_FORMAT   m_TexelFormat;
 	TEXTURE_TYPE    m_Type;
+
+	Mox::ShaderResourceView* m_DefaultView;
 };
 
 struct StaticSampler {

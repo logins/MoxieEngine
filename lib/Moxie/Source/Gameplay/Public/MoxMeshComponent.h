@@ -32,7 +32,7 @@ private:
 	Mox::VertexBuffer& m_VertexBuffer;
 	Mox::IndexBuffer& m_IndexBuffer;
 
-	MeshParamsList m_ShaderParameters;
+	BufferMeshParams m_ShaderParameters;
 
 	std::unique_ptr<Mox::ConstantBuffer> m_MvpBuffer;
 

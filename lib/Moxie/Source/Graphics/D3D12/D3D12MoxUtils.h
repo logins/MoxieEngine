@@ -179,7 +179,6 @@ namespace Mox {
 
 	struct D3D12ConstantBufferView : public Mox::ConstantBufferView
 	{
-		D3D12ConstantBufferView() = delete;
 
 		D3D12ConstantBufferView(Mox::BufferResource& InResource);
 				
@@ -195,6 +194,8 @@ namespace Mox {
 
 		bool IsGpuAllocated() override { return m_GpuAllocatedRange != nullptr; }
 
+		virtual ~D3D12ConstantBufferView();
+
 		// Descriptor range referenced by this View object.
 		// Note: The StaticDescAllocation destructor will declared the relative descriptors to be stale and they will be cleared at the end of the frame
 		std::unique_ptr<Mox::StaticDescAllocation> m_CpuAllocatedRange;
@@ -203,13 +204,22 @@ namespace Mox {
 		// since it will not change over time
 		std::unique_ptr<Mox::StaticDescAllocation> m_GpuAllocatedRange;
 
+	protected:
 
+		D3D12ConstantBufferView();
+
+	};
+
+	// The only purpose of this class is to instantiate the null descriptor for the constant buffer view
+	struct D3D12NullCbv : public D3D12ConstantBufferView
+	{
+		static void SetStaticInstance();
+
+		D3D12NullCbv();
 	};
 
 	struct D3D12ShaderResourceView : public Mox::ShaderResourceView
 	{
-		D3D12ShaderResourceView() = delete;
-
 		D3D12ShaderResourceView(Mox::TextureResource& InTextureToReference);
 
 		void InitAsTex2DArray(Mox::TextureResource& InTexture, uint32_t InArraySize, uint32_t InMostDetailedMip, uint32_t InMipLevels, uint32_t InFirstArraySlice, uint32_t InPlaceSlice);
@@ -231,6 +241,18 @@ namespace Mox {
 
 		bool IsGpuAllocated() override;
 
+	protected:
+
+		D3D12ShaderResourceView() = default;
+
+	};
+
+	// The only purpose of this class is to instantiate the null descriptor for the shader resource view
+	struct D3D12NullSrv : public D3D12ShaderResourceView
+	{
+		static void SetStaticInstance();
+
+		D3D12NullSrv();
 	};
 
 	struct D3D12UnorderedAccessView : public Mox::UnorderedAccessView

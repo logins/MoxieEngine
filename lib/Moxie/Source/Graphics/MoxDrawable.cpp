@@ -29,7 +29,7 @@ Drawable::~Drawable() = default;
 
 void Drawable::SetShaderParamValue(Mox::SpHash InHash, Mox::ConstantBuffer* InBuffer)
 {
-	m_ShaderParameters[InHash] = InBuffer;
+	m_BufferShaderParameters[InHash] = InBuffer;
 }
 
 }

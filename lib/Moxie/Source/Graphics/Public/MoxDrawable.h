@@ -43,8 +43,9 @@ public:
 
 
 	// Shader parameter hash -> Buffer
-	std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*> m_ShaderParameters; // TODO later replace with Mox::ResourceView*
-
+	std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*> m_BufferShaderParameters;
+	// Shader parameter hash -> Texture
+	std::unordered_map<Mox::SpHash, Mox::Texture*> m_TextureShaderParameters;
 
 	Mox::Material& m_Material;
 };

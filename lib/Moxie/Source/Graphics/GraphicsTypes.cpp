@@ -154,4 +154,15 @@ namespace Mox {
 		});
 	}
 
+	Mox::ConstantBufferView* ConstantBufferView::GetNull()
+	{
+		return m_NullCbv.get();
+	}
+
+	ConstantBufferView::ConstantBufferView() = default;
+
+	std::unique_ptr<Mox::ConstantBufferView> ConstantBufferView::m_NullCbv;
+
+	std::unique_ptr<Mox::ShaderResourceView> ShaderResourceView::m_NullSrv;
+
 }

@@ -100,14 +100,37 @@ namespace Mox {
 	// Definition for the Shader Parameter Hash value type
 	using SpHash = uint64_t;
 
-	using MeshParamsList = std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>;
+	enum class SHADER_PARAM_TYPE : uint8_t
+	{
+		CONSTANT_BUFFER,
+		TEXTURE,
+		UNORDERED_ACCESS
+	};
+
+	struct ShaderParameterDefinition
+	{
+		// Index to identify the location of the shader parameter in the pipeline state (e.g. root signature in D3D12)
+		// Note: In a real context, this can be detached from the rest of the parameters, which come from shaders and
+		// are usually retrieved with shader reflection.
+		uint8_t PipelineRootIndex;
+		std::string m_Name;
+		SHADER_PARAM_TYPE m_Type;
+		// Index used to classify between parameters of the same type
+		uint8_t m_RegisterIndex;
+		// Broader subdivision for parameters of the same type in shaders (introduced for retro-compatibility)
+		uint8_t m_SpaceIndex;
+	};
+
+	using BufferMeshParams = std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>;
+	using TextureMeshParams = std::vector<std::tuple<Mox::SpHash, Mox::Texture*>>;
 
 	struct DrawableCreationInfo
 	{
 		Mox::Entity* m_OwningEntity;
 		Mox::VertexBuffer* m_VertexBuffer;
 		Mox::IndexBuffer* m_IndexBuffer;
-		MeshParamsList m_ShaderParameters;
+		BufferMeshParams m_BufferShaderParameters;
+		TextureMeshParams m_TextureShaderParameters;
 	};
 
 	// Used by the simulation thread to transfer object changes to the render thread

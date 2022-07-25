@@ -377,7 +377,8 @@ protected:
 struct ShaderResourceView : public ResourceView {
 	virtual void InitAsTex2DOrCubemap(Mox::TextureResource& InTexture) = 0;
 
-	static ShaderResourceView* GetNull() { return m_NullSrv.get(); }
+	static ShaderResourceView* GetNullTex2D() { return m_NullTex2DSrv.get(); }
+	static ShaderResourceView* GetNullCube() { return m_NullCubeSrv.get(); }
 
 protected:
 	ShaderResourceView(Mox::Resource& InResource) { }
@@ -385,7 +386,8 @@ protected:
 	ShaderResourceView() { }
 
 	// Derived platform-specific class will need to initialize it
-	static std::unique_ptr<ShaderResourceView> m_NullSrv;
+	static std::unique_ptr<ShaderResourceView> m_NullTex2DSrv;
+	static std::unique_ptr<ShaderResourceView> m_NullCubeSrv;
 };
 
 struct UnorderedAccessView : public ResourceView {

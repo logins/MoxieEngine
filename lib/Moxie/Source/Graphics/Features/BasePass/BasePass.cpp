@@ -148,7 +148,7 @@ namespace Mox {
 			else
 			{
 				// Bind null descriptor
-				CubeTexSrv = Mox::ShaderResourceView::GetNull();
+				CubeTexSrv = Mox::ShaderResourceView::GetNullCube();
 			}
 
 			srvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_cube_tex].PipelineRootIndex, CubeTexSrv);

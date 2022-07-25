@@ -268,10 +268,12 @@ namespace Mox {
 	void D3D12GraphicsAllocator::Initialize()
 	{
 		
+		m_DescHeapFactory = std::make_unique<Mox::D3D12DescHeapFactory>();
+
 		Mox::D3D12NullCbv::SetStaticInstance();
 
+		Mox::D3D12NullSrv::SetStaticInstances();
 
-		m_DescHeapFactory = std::make_unique<Mox::D3D12DescHeapFactory>();
 
 		// Allocate an empty resource and create the dynamic buffer allocator on it
 		// Note: We are using a system similar to what described for Diligent Engine https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D

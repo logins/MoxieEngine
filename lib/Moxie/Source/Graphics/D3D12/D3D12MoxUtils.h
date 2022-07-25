@@ -245,14 +245,15 @@ namespace Mox {
 
 		D3D12ShaderResourceView() = default;
 
+		D3D12_SHADER_RESOURCE_VIEW_DESC m_Desc;
 	};
 
 	// The only purpose of this class is to instantiate the null descriptor for the shader resource view
 	struct D3D12NullSrv : public D3D12ShaderResourceView
 	{
-		static void SetStaticInstance();
+		static void SetStaticInstances();
 
-		D3D12NullSrv();
+		D3D12NullSrv(const Mox::BUFFER_FORMAT& InFormat, const Mox::TEXTURE_TYPE InType);
 	};
 
 	struct D3D12UnorderedAccessView : public Mox::UnorderedAccessView

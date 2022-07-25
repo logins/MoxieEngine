@@ -125,8 +125,6 @@ namespace Mox {
 
 	Texture::Texture(const wchar_t* InFilePath)
 	{
-		
-		
 		// Load texture data from file
 		std::vector<Mox::TexDataInfo> subResInfo;
 		const void* texData;
@@ -163,6 +161,8 @@ namespace Mox {
 
 	std::unique_ptr<Mox::ConstantBufferView> ConstantBufferView::m_NullCbv;
 
-	std::unique_ptr<Mox::ShaderResourceView> ShaderResourceView::m_NullSrv;
+	std::unique_ptr<Mox::ShaderResourceView> ShaderResourceView::m_NullTex2DSrv;
+
+	std::unique_ptr<Mox::ShaderResourceView> ShaderResourceView::m_NullCubeSrv;
 
 }

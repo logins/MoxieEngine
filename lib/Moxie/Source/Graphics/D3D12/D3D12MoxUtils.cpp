@@ -566,15 +566,16 @@ namespace Mox
 
 
 
-	void D3D12NullSrv::SetStaticInstance()
+	void D3D12NullSrv::SetStaticInstances()
 	{
-		if (!m_NullSrv)
+		if (!m_NullTex2DSrv)
 		{
-			m_NullSrv = std::make_unique<Mox::D3D12NullSrv>();
+			m_NullTex2DSrv = std::make_unique<Mox::D3D12NullSrv>(Mox::BUFFER_FORMAT::R32G32B32_FLOAT, Mox::TEXTURE_TYPE::TEX_2D);
+			m_NullCubeSrv = std::make_unique<Mox::D3D12NullSrv>(Mox::BUFFER_FORMAT::R32G32B32_FLOAT, Mox::TEXTURE_TYPE::TEX_CUBE);
 		}
 	}
 
-	D3D12NullSrv::D3D12NullSrv()
+	D3D12NullSrv::D3D12NullSrv(const Mox::BUFFER_FORMAT& InFormat, const Mox::TEXTURE_TYPE InType)
 	{
 		if (!m_CpuAllocatedRange)
 		{
@@ -586,7 +587,37 @@ namespace Mox
 		// Instantiate View
 		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
 
-		d3d12Device.GetInner()->CreateShaderResourceView(nullptr, nullptr, m_CpuAllocatedRange->m_FirstCpuHandle);
+		m_Desc.Format = Mox::BufferFormatToD3D12(InFormat);
+		// Forcing all the channels to return 0 when attempting to fetch memory
+		m_Desc.Shader4ComponentMapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+			D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0, 
+			D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0, D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0);
+
+		switch (InType)
+		{
+		case TEXTURE_TYPE::TEX_2D:
+		{
+			m_Desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			m_Desc.Texture2D = D3D12_TEX2D_SRV{ 0,5 };
+		}
+		break;
+		case TEXTURE_TYPE::TEX_CUBE:
+		{
+			m_Desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			m_Desc.TextureCube = D3D12_TEXCUBE_SRV{ 0,5 };
+		}
+		break;
+		default:
+		{
+			StopForFail("DXGI Buffer Format undefined.")
+		}
+		break;
+		}
+
+
+		// A null pResource is used to initialize a null descriptor, which guarantees D3D11-like null binding behavior 
+		// (reading 0s, writes are discarded), but must have a valid pDesc in order to determine the descriptor type.
+		d3d12Device.GetInner()->CreateShaderResourceView(nullptr, &m_Desc, m_CpuAllocatedRange->m_FirstCpuHandle);
 	}
 
 }

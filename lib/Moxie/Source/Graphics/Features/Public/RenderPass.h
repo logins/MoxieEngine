@@ -38,7 +38,7 @@ namespace Mox {
 
 		// Sets up pipeline state, including root signature and shaders
 		// (for simplicity, at the moment, there is one static PSO for render pass) 
-		virtual void SetupPass() = 0;
+		virtual void SetupPass(Mox::CommandList& InCmdList) = 0;
 
 		// Inspects relevant parameters of the proxy: if relevant generates a draw command out from it.
 		virtual void ProcessRenderProxy(Mox::RenderProxy& InProxy) = 0;

@@ -7,7 +7,7 @@ ConstantBuffer<ModelViewProjection> ModelViewProjectionCB : register(b0); // Tem
 
 struct VertexPosColor
 {
-	float3 Position : POSITION; // Note: the value semantics here need to reflect what was specified for the imput assembler during pipeline creation
+    float3 Position : SV_Position; // Note: the value semantics here need to reflect what was specified for the imput assembler during pipeline creation
 	float3 CubemapCoords : TEX_COORDS;
 };
 

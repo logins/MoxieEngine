@@ -37,7 +37,7 @@ public:
 	virtual ~GraphicsAllocatorBase();
 
 	// Creates default resources
-	virtual void Initialize() = 0;
+	virtual void Initialize(Mox::CommandList& InCmdList) = 0;
 
 	virtual void OnNewFrameStarted() = 0;
 

@@ -480,11 +480,15 @@ namespace Mox
 
 	D3D12ConstantBufferView::~D3D12ConstantBufferView() = default;
 
-	void D3D12NullCbv::SetStaticInstance()
+	void D3D12NullCbv::SetStaticInstance(Mox::CommandList& InCmdList)
 	{
 		if (!m_NullCbv)
 		{
 			m_NullCbv = std::make_unique<Mox::D3D12NullCbv>();
+			
+			// Constructor will allocate it on CPU, it then needs to be uploaded to GPU
+			// TODO FIX ME
+			//InCmdList.UploadViewToGPU(*m_NullCbv.get());
 		}
 	}
 
@@ -496,12 +500,13 @@ namespace Mox
 			// Allocate descriptor in CPU descriptor heap
 
 			m_CpuAllocatedRange = static_cast<Mox::D3D12GraphicsAllocator*>(Mox::GraphicsAllocator::Get())->GetDescriptorsCpuHeap().AllocateStaticRange(1);
+		
+			// Instantiate View
+			Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
+
+			d3d12Device.GetInner()->CreateConstantBufferView(nullptr, m_CpuAllocatedRange->m_FirstCpuHandle);
+
 		}
-
-		// Instantiate View
-		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());
-
-		d3d12Device.GetInner()->CreateConstantBufferView(nullptr, m_CpuAllocatedRange->m_FirstCpuHandle);
 	}
 
 	D3D12Resource::D3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType, size_t InSize)
@@ -566,12 +571,16 @@ namespace Mox
 
 
 
-	void D3D12NullSrv::SetStaticInstances()
+	void D3D12NullSrv::SetStaticInstances(Mox::CommandList& InCmdList)
 	{
 		if (!m_NullTex2DSrv)
 		{
 			m_NullTex2DSrv = std::make_unique<Mox::D3D12NullSrv>(Mox::BUFFER_FORMAT::R32G32B32_FLOAT, Mox::TEXTURE_TYPE::TEX_2D);
 			m_NullCubeSrv = std::make_unique<Mox::D3D12NullSrv>(Mox::BUFFER_FORMAT::R32G32B32_FLOAT, Mox::TEXTURE_TYPE::TEX_CUBE);
+
+			// Constructor will allocate it on CPU, it then needs to be uploaded to GPU
+			InCmdList.UploadViewToGPU(*m_NullTex2DSrv.get());
+			InCmdList.UploadViewToGPU(*m_NullCubeSrv.get());
 		}
 	}
 

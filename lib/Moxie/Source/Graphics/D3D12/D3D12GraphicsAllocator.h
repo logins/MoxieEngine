@@ -41,7 +41,7 @@ public:
 	// Note2: We need to declare base destructor as virtual to make the derived class destructor to be executed first
 	virtual ~D3D12GraphicsAllocator() override;
 
-	void Initialize() override;
+	void Initialize(Mox::CommandList& InCmdList) override;
 
 	void OnNewFrameStarted() override;
 

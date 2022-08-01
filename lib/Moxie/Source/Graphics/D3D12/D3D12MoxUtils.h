@@ -213,7 +213,7 @@ namespace Mox {
 	// The only purpose of this class is to instantiate the null descriptor for the constant buffer view
 	struct D3D12NullCbv : public D3D12ConstantBufferView
 	{
-		static void SetStaticInstance();
+		static void SetStaticInstance(Mox::CommandList& InCmdList);
 
 		D3D12NullCbv();
 	};
@@ -226,7 +226,7 @@ namespace Mox {
 
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescHandle() { return m_CpuAllocatedRange->m_FirstCpuHandle; }
 
-		D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescHandle() { return m_GpuAllocatedRange->m_FirstGpuHandle; }
+		const D3D12_GPU_DESCRIPTOR_HANDLE& GetGPUDescHandle() { return m_GpuAllocatedRange->m_FirstGpuHandle; }
 
 		virtual void InitAsTex2DOrCubemap(Mox::TextureResource& InTexture);
 
@@ -251,9 +251,10 @@ namespace Mox {
 	// The only purpose of this class is to instantiate the null descriptor for the shader resource view
 	struct D3D12NullSrv : public D3D12ShaderResourceView
 	{
-		static void SetStaticInstances();
+		static void SetStaticInstances(Mox::CommandList& InCmdList);
 
 		D3D12NullSrv(const Mox::BUFFER_FORMAT& InFormat, const Mox::TEXTURE_TYPE InType);
+
 	};
 
 	struct D3D12UnorderedAccessView : public Mox::UnorderedAccessView

@@ -33,7 +33,7 @@ namespace Mox {
 		//BasePass& operator=(const BasePass&) = delete;
 
 
-		void SetupPass() override;
+		void SetupPass(Mox::CommandList& InCmdList) override;
 
 		void ProcessRenderProxy(Mox::RenderProxy& InProxy) override;
 

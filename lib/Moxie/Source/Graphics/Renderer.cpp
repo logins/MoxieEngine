@@ -29,16 +29,23 @@ RenderThread::RenderThread()
 	// Application has now control over the graphics allocator default instance
 	GraphicsAllocator::SetDefaultInstance(m_GraphicsAllocator.get());
 
-	Mox::GraphicsAllocator::Get()->Initialize();
-
 	// Create Command Queue
 	m_CmdQueue = &Mox::GraphicsAllocator::Get()->AllocateCommandQueue(m_GraphicsDevice, Mox::COMMAND_LIST_TYPE::COMMAND_LIST_TYPE_DIRECT);
 
+
+	Mox::CommandList& initContentCmdList = GetCmdQueue()->GetAvailableCommandList();
+
+	Mox::GraphicsAllocator::Get()->Initialize(initContentCmdList);
+	
 	// ----- Setup Render Passes -----
 	for (const std::unique_ptr<Mox::RenderPass>& pass : GetRenderPasses())
 	{
-		pass->SetupPass();
+		pass->SetupPass(initContentCmdList);
 	}
+
+	GetCmdQueue()->ExecuteCmdList(initContentCmdList);
+
+	GetCmdQueue()->Flush();
 
 }
 

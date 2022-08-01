@@ -225,7 +225,6 @@ namespace Mox{
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = TransformResourceBinderFlags(InResourceBinder.Flags);
 
 		// --- Root Parameters ---
-		// Using a single 32-bit constant root parameter (MVP matrix) that is used by the vertex shader
 		std::vector<RESOURCE_BINDER_PARAM>& agnosticRootParameters = InResourceBinder.Params;
 		std::vector<CD3DX12_ROOT_PARAMETER1>& rootParameters = m_RootSignatureInfo.rootParameters;
 		rootParameters.reserve(agnosticRootParameters.size());

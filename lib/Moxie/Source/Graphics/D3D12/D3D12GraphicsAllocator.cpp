@@ -28,7 +28,27 @@ namespace Mox {
 
 	// Note: The non-inline definition of the constructor is necessary to forward classes used in member smart pointers!!
 	// More info in this thread: https://stackoverflow.com/questions/27336779/unique-ptr-and-forward-declaration
-	D3D12GraphicsAllocator::D3D12GraphicsAllocator() = default;
+	D3D12GraphicsAllocator::D3D12GraphicsAllocator()
+	{
+		m_DescHeapFactory = std::make_unique<Mox::D3D12DescHeapFactory>();
+
+		// Allocate an empty resource and create the dynamic buffer allocator on it
+		// Note: We are using a system similar to what described for Diligent Engine https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D
+		Mox::D3D12Resource& dynamicBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+
+		m_DynamicBufferAllocator = std::make_unique<Mox::D3D12DynamicBufferAllocator>(dynamicBufferResource);
+
+
+		Mox::D3D12Resource& targetBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::DEFAULT, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& stagingBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+
+		m_StaticBufferAllocator = std::make_unique<Mox::D3D12StaticBufferAllocator>(targetBufferResource, stagingBufferResource);
+
+
+		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+
+		m_TextureAllocator = std::make_unique<Mox::D3D12TextureAllocator>(4194304, stagingBufferResourceForTextures);
+	}
 
 	D3D12GraphicsAllocator::~D3D12GraphicsAllocator()
 	{
@@ -265,32 +285,13 @@ namespace Mox {
 		m_TextureAllocator->UpdateContent(InCmdList, InTextureUpdates);
 	}
 
-	void D3D12GraphicsAllocator::Initialize()
+	void D3D12GraphicsAllocator::Initialize(Mox::CommandList& InCmdList)
 	{
-		
-		m_DescHeapFactory = std::make_unique<Mox::D3D12DescHeapFactory>();
 
-		Mox::D3D12NullCbv::SetStaticInstance();
+		Mox::D3D12NullCbv::SetStaticInstance(InCmdList);
 
-		Mox::D3D12NullSrv::SetStaticInstances();
+		Mox::D3D12NullSrv::SetStaticInstances(InCmdList);
 
-
-		// Allocate an empty resource and create the dynamic buffer allocator on it
-		// Note: We are using a system similar to what described for Diligent Engine https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D
-		Mox::D3D12Resource& dynamicBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
-
-		m_DynamicBufferAllocator = std::make_unique<Mox::D3D12DynamicBufferAllocator>(dynamicBufferResource);
-
-
-		Mox::D3D12Resource& targetBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::DEFAULT, RESOURCE_STATE::GEN_READ);
-		Mox::D3D12Resource& stagingBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
-
-		m_StaticBufferAllocator = std::make_unique<Mox::D3D12StaticBufferAllocator>(targetBufferResource, stagingBufferResource);
-
-
-		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
-
-		m_TextureAllocator = std::make_unique<Mox::D3D12TextureAllocator>(4194304, stagingBufferResourceForTextures);
 	}
 
 	void D3D12GraphicsAllocator::StoreAndReferenceDynamicBuffer(uint32_t InRootIdx, Mox::BufferResource& InDynBuffer, Mox::ConstantBufferView& InResourceView)

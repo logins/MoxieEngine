@@ -28,11 +28,13 @@ class Drawable
 {
 public:
 	Drawable(Mox::VertexBuffer& InVertexBuffer, Mox::IndexBuffer& InIndexBuffer, 
-		const std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>& InShaderParams);
+		const std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>& InBufferShaderParams,
+		const std::vector<std::tuple<Mox::SpHash, Mox::Texture*>>& InTextureShaderParams);
 
 	virtual ~Drawable();
 
-	void SetShaderParamValue(Mox::SpHash InHash, Mox::ConstantBuffer* InBuffer);
+	void SetCbShaderParamValue(Mox::SpHash InHash, Mox::ConstantBuffer* InBuffer);
+	void SetTexShaderParamValue(Mox::SpHash InHash, Mox::Texture* InTexture);
 
 
 	// Translation, Rotation and Scale

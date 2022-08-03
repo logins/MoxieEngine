@@ -45,7 +45,7 @@ namespace Mox {
 		m_StaticBufferAllocator = std::make_unique<Mox::D3D12StaticBufferAllocator>(targetBufferResource, stagingBufferResource);
 
 
-		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ, 4194304);
 
 		m_TextureAllocator = std::make_unique<Mox::D3D12TextureAllocator>(4194304, stagingBufferResourceForTextures);
 	}
@@ -235,7 +235,9 @@ namespace Mox {
 	{
 		for (const Mox::DrawableCreationInfo& drawableReq : InRequests)
 		{
-			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(*drawableReq.m_VertexBuffer, *drawableReq.m_IndexBuffer, drawableReq.m_BufferShaderParameters));
+			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(
+				*drawableReq.m_VertexBuffer, *drawableReq.m_IndexBuffer, 
+				drawableReq.m_BufferShaderParameters, drawableReq.m_TextureShaderParameters));
 			
 			drawableReq.m_OwningEntity->GetRenderProxy()->AddDrawable(m_DrawableArray.back().get());
 		}

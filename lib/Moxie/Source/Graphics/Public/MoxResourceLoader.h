@@ -18,7 +18,8 @@ public:
 	static ResourceLoader& Get();
 
 	virtual bool LoadTextureData(const wchar_t* InFilePath, 
-		Mox::TextureDesc& OutDesc, const  void*& OutData, size_t& OutSize, 
+		Mox::TextureDesc& OutDesc, std::unique_ptr<uint8_t[]>& OutDataArray,
+		const void*& OutDataPtr, size_t& OutSize,
 		std::vector<Mox::TexDataInfo>& OutSubResInfo) = 0;
 
 protected:

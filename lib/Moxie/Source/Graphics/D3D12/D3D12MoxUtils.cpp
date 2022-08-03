@@ -530,8 +530,8 @@ namespace Mox
 			m_SubresourceFootprints.resize(m_SubresourcesNum);
 			m_RowsNumVector.resize(m_SubresourcesNum);
 			m_RowSizeVector.resize(m_SubresourcesNum);
-			m_TotalBytesVector.resize(m_SubresourcesNum);
 
+		
 
 			static_cast<Mox::D3D12Device&>(GetDevice()).GetInner()->GetCopyableFootprints(
 				&m_Desc,
@@ -541,7 +541,7 @@ namespace Mox
 				m_SubresourceFootprints.data(),
 				GetRowsNumVector().data(),
 				m_RowSizeVector.data(),
-				m_TotalBytesVector.data()
+				nullptr
 			);
 
 		}

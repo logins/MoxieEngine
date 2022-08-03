@@ -113,7 +113,13 @@ namespace Mox {
 		m_TexelFormat(InDesc.m_TexelFormat),
 		m_Type(InDesc.m_Type)
 	{
+		CreateDefaultView();
+	}
 
+	void TextureResource::CreateDefaultView()
+	{
+		// Note: This will create the view on CPU side, we will also need to upload it to GPU with a command list
+		m_DefaultView = &Mox::GraphicsAllocator::Get()->AllocateShaderResourceView(*this);
 	}
 
 	Texture::Texture(TextureDesc& InDesc)
@@ -129,14 +135,17 @@ namespace Mox {
 		std::vector<Mox::TexDataInfo> subResInfo;
 		const void* texData;
 		size_t texEntireSize;
-		Mox::ResourceLoader::Get().LoadTextureData(
-			InFilePath, m_Desc, texData, texEntireSize, subResInfo);
 
-		// Ask for tex resource creation
-		Mox::RequestTextureResource(*this, m_Desc);
+		if (Mox::ResourceLoader::Get().LoadTextureData(
+			InFilePath, m_Desc, m_TextureData, texData, texEntireSize, subResInfo))
+		{
+			// Ask for tex resource creation
+			Mox::RequestTextureResource(*this, m_Desc);
 
-		// Update tex resource content
-		UpdateContent(texData, texEntireSize, subResInfo);
+			// Update tex resource content
+			UpdateContent(texData, texEntireSize, subResInfo);
+		}
+
 		
 	}
 
@@ -151,6 +160,8 @@ namespace Mox {
 		this
 		});
 	}
+
+	
 
 	Mox::ConstantBufferView* ConstantBufferView::GetNull()
 	{

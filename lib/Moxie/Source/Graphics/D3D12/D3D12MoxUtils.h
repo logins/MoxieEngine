@@ -133,7 +133,6 @@ namespace Mox {
 		uint16_t GetSubresourcesNum() const { return m_SubresourcesNum; }
 		std::vector<uint32_t>& GetRowsNumVector() { return m_RowsNumVector; }
 		std::vector<uint64_t>& GetRowSizeVector() { return m_RowSizeVector; }
-		std::vector<uint64_t>& GeTotalBytesVector() { return m_TotalBytesVector; }
 		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>& GetSubresourceFootprints() { return m_SubresourceFootprints; }
 		// --------------------------------------------------------------------------------
 		void SetInner(Microsoft::WRL::ComPtr<ID3D12Resource> InResource) { m_D3D12Resource = InResource; }
@@ -158,7 +157,6 @@ namespace Mox {
 		uint16_t m_SubresourcesNum;
 		std::vector <uint32_t> m_RowsNumVector;
 		std::vector <uint64_t> m_RowSizeVector;
-		std::vector <uint64_t> m_TotalBytesVector;
 		
 	};
 

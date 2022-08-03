@@ -338,6 +338,10 @@ public:
 private:
 	// Pointer reserved for render thread access
 	Mox::TextureResource* m_Resource;
+	// Array of texture data, also reserved to the render thread to upload it to GPU
+	// In the case this would require reading from CPU, its access should be wrapped
+	// by a mutex lock. But at the moment we don't need it.
+	std::unique_ptr<uint8_t[]> m_TextureData;
 
 	Mox::TextureDesc m_Desc;
 };
@@ -467,6 +471,7 @@ public:
 	Mox::ShaderResourceView* GetView() const { return m_DefaultView; }
 
 protected:
+	void CreateDefaultView();
 	Mox::Resource& m_OwnerResource;
 	Mox::GPU_V_ADDRESS m_GpuPtr;
 	size_t			m_Size;

@@ -219,14 +219,32 @@ void RenderThread::ProcessRenderUpdates()
 
 	}
 
-	if (m_RenderUpdatesToProcess.m_StaticBufferUpdates.size() > 0 || m_RenderUpdatesToProcess.m_TextureUpdates.size() > 0)
+	if (m_RenderUpdatesToProcess.m_StaticBufferUpdates.size() > 0 
+		|| m_RenderUpdatesToProcess.m_TextureUpdates.size() > 0
+		|| m_RenderUpdatesToProcess.m_TextureResourceRequests.size() > 0)
 	{
 		// Update static resources
 		Mox::CommandList& loadContentCmdList = GetCmdQueue()->GetAvailableCommandList();
 
+		// Upload default views for textures that were just created this frame
+		TransitionInfoVector texTransitions;
+		texTransitions.reserve(m_RenderUpdatesToProcess.m_TextureResourceRequests.size());
+		for (const Mox::TextureResourceRequest& texRequest : m_RenderUpdatesToProcess.m_TextureResourceRequests)
+		{
+			loadContentCmdList.UploadViewToGPU(*texRequest.m_TargetTexture->GetResource()->GetView());
+			// This will be filled now but used later
+			texTransitions.emplace_back( &texRequest.m_TargetTexture->GetResource()->GetOwnerResource(), RESOURCE_STATE::COPY_DEST, RESOURCE_STATE::GEN_READ );
+		}
+		// Upload data for new static buffers
 		Mox::GraphicsAllocator::Get()->UpdateStaticBufferResources(loadContentCmdList, m_RenderUpdatesToProcess.m_StaticBufferUpdates);
-
+		
+		// Upload data for new textures
 		Mox::GraphicsAllocator::Get()->UpdateTextureResources(loadContentCmdList, m_RenderUpdatesToProcess.m_TextureUpdates);
+		if (texTransitions.size() > 0)
+		{
+			// Switch new textures back to a read state
+			loadContentCmdList.ResourceBarriers(texTransitions);
+		}
 
 		GetCmdQueue()->ExecuteCmdList(loadContentCmdList);
 

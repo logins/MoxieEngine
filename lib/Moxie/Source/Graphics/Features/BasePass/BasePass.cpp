@@ -18,7 +18,6 @@
 
 namespace Mox {
 
-
 	// SPH = Shader Parameter Hash
 	static constexpr SpHash SPH_mvp = Mox::HashSpName("mvp");
 

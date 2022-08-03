@@ -89,7 +89,6 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 		// Rows num, row size and total bytes is the same for every mip 0
 		std::vector <uint32_t> rowsNumVector(subresourceUpdatesNum);
 		std::vector <uint64_t> rowSizeVector(subresourceUpdatesNum);
-		std::vector <uint32_t> totalBytesVector(subresourceUpdatesNum);
 
 		// Note: D3D12_SUBRESOURCE_INFO holds information about the updates on CPU side we want to transfer to the target subresources on GPU!
 		std::vector<D3D12_SUBRESOURCE_DATA> subresourceDataVector(subresourceUpdatesNum);
@@ -104,7 +103,6 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 			uint16_t mipIndexInTexture = updateDesc.m_SliceIndex * texResourceDesc.MipLevels + updateDesc.m_MipLevel;
 			rowsNumVector[i] = curTexResource.GetRowsNumVector()[mipIndexInTexture];
 			rowSizeVector[i] = curTexResource.GetRowSizeVector()[mipIndexInTexture];
-			totalBytesVector[i] = curTexResource.GeTotalBytesVector()[mipIndexInTexture];
 
 			// Data we are sending is meant to have all the mip 0 in contiguous memory
 			subresourceDataVector[i] = {
@@ -118,7 +116,7 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 
 			
 		// Building the subresource info for the 
-		uint64_t success = ::UpdateSubresources(
+		UINT64 uploadEsit = ::UpdateSubresources(
 			static_cast<Mox::D3D12CommandList&>(InCmdList).GetInner().Get(),		//_In_ ID3D12GraphicsCommandList* pCmdList,
 			curTexResource.GetInner().Get(),										//_In_ ID3D12Resource* pDestinationResource,
 			static_cast<Mox::D3D12Resource&>(m_StagingResource).GetInner().Get(),	//_In_ ID3D12Resource* pIntermediate,
@@ -131,6 +129,7 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 			subresourceDataVector.data()//_In_reads_(NumSubresources) const D3D12_SUBRESOURCE_INFO* pSrcData) noexcept
 		);
 
+		Check(uploadEsit > 0) // This should return the resource required size. If 0 is returned, the operation failed.
 		
 	}
 

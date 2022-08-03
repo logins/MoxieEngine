@@ -828,12 +828,11 @@ namespace Mox {
 	}
 
 	bool D3D12ResourceLoader::LoadTextureData(const wchar_t* InFilePath, 
-		Mox::TextureDesc& OutDesc, const void*& OutData, size_t& OutSize, std::vector<Mox::TexDataInfo>& OutSubResInfo)
+		Mox::TextureDesc& OutDesc, std::unique_ptr<uint8_t[]>& ddsData, const void*& OutData, 
+		size_t& OutSize, std::vector<Mox::TexDataInfo>& OutSubResInfo)
 	{
 
-		std::unique_ptr<uint8_t[]> ddsData;
-
-		const DDS_HEADER* header = nullptr;
+			const DDS_HEADER* header = nullptr;
 		const uint8_t* bitData = nullptr; // Pointer to the texture content
 		size_t bitSize = 0; // Size (in bytes) of the texture content
 
@@ -844,7 +843,7 @@ namespace Mox {
 			&bitData,
 			&bitSize
 		);
-		if (FAILED(hr))
+		if (hr != S_OK)
 		{
 			return false;
 		}
@@ -1115,7 +1114,7 @@ namespace Mox {
 		OutData = bitData;
 		OutSize = bitSize;
 
-		return false;
+		return true;
 	}
 
 }

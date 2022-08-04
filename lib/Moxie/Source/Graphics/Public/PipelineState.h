@@ -25,13 +25,6 @@ public:
 	// We need it to release references to graphics resources (with ComPtr)!!
 	virtual ~PipelineState(); 
 
-	struct INPUT_LAYOUT_DESC {
-		struct LayoutElement {
-			std::string m_Name;
-			Mox::BUFFER_FORMAT m_Format;
-		};
-		std::vector<LayoutElement> LayoutElements;
-	};
 	// Abstraction of root signature parameter desc
 	struct RESOURCE_BINDER_PARAM {
 		// TODO create support for root descriptors

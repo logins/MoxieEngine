@@ -48,13 +48,10 @@ void TexturesExampleApplication::OnInitializeContent()
 {
 	// Load Content
 
-	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
+	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexLayoutDesc, m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
 	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
 
 	m_CubeEntity = &AddEntity({ Mox::Vector3f::Zero() });
-
-	Mox::TextureDesc TexDesc;
-	void* TexData;
 
 	// Create the cubemap texture
 	m_Cubemap = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMap.dds));

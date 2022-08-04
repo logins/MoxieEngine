@@ -9,7 +9,6 @@
 #include "BasePass.h"
 #include "DrawCommand.h"
 #include "GraphicsUtils.h"
-#include "PipelineState.h"
 #include "MoxRenderProxy.h"
 #include "CommandList.h"
 #include "MoxDrawable.h"
@@ -41,6 +40,14 @@ namespace Mox {
 	// placed in different root locations.
 	static std::unordered_map<Mox::SpHash, Mox::ShaderParameterDefinition> m_ShaderParamDefinitionMap;
 
+	// Vertex Input Layout
+	static Mox::INPUT_LAYOUT_DESC m_DefaultInputLayoutDesc{ {
+		{"POSITION",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
+		{"COLOR",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
+		{"CUBETEXCOORD",Mox::BUFFER_FORMAT::R32G32B32_FLOAT}
+	}
+	};
+
 	BasePass::~BasePass()
 	{
 		
@@ -59,7 +66,7 @@ namespace Mox {
 		//Create Root Signature
 		// Allow Input layout access to shader resources (in out case, the MVP matrix) 
 		// and deny it to other stages (small optimization)
-		Mox::PipelineState::RESOURCE_BINDER_DESC resourceBinderDesc;
+		static Mox::PipelineState::RESOURCE_BINDER_DESC resourceBinderDesc;
 		resourceBinderDesc.Flags =
 			Mox::PipelineState::RESOURCE_BINDER_FLAGS::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 			Mox::PipelineState::RESOURCE_BINDER_FLAGS::DENY_HULL_SHADER_ACCESS |
@@ -99,13 +106,7 @@ namespace Mox {
 		// Static sampler for the cubemap
 		resourceBinderDesc.StaticSamplers.emplace_back(0, SAMPLE_FILTER_TYPE::LINEAR);
 
-		// Create the Vertex Input Layout
-		Mox::PipelineState::INPUT_LAYOUT_DESC inputLayout{ {
-			{"POSITION",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
-			{"COLOR",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
-			{"CUBETEXCOORD",Mox::BUFFER_FORMAT::R32G32B32_FLOAT}
-		}
-		};
+		
 
 		// --- Shader Loading ---
 		// Note: to generate the .cso file I will be using the offline method, using fxc.exe integrated in visual studio (but downloadable separately).
@@ -122,20 +123,19 @@ namespace Mox {
 		// Create Root Signature serialized blob and then the object from it
 		// RTV Formats
 		// Pipeline State Stream definition and fill
-		Mox::PipelineState::GRAPHICS_PSO_DESC pipelineStateDesc{
-			inputLayout,
-			resourceBinderDesc,
-			Mox::PRIMITIVE_TOPOLOGY_TYPE::PTT_TRIANGLE,
-			vertexShader,
-			pixelShader,
-			Mox::BUFFER_FORMAT::D32_FLOAT,
-			Mox::BUFFER_FORMAT::R8G8B8A8_UNORM
-		};
+		
+		m_DefaultPSODesc = std::make_unique<Mox::PipelineState::GRAPHICS_PSO_DESC>(
+			Mox::PipelineState::GRAPHICS_PSO_DESC{
+				m_DefaultInputLayoutDesc,
+				resourceBinderDesc,
+				Mox::PRIMITIVE_TOPOLOGY_TYPE::PTT_TRIANGLE,
+				vertexShader,
+				pixelShader,
+				Mox::BUFFER_FORMAT::D32_FLOAT,
+				Mox::BUFFER_FORMAT::R8G8B8A8_UNORM
+			});
 
-		m_PipelineState = &GraphicsAllocator::Get()->AllocatePipelineState();
-
-		//Init the Pipeline State Object
-		m_PipelineState->Init(pipelineStateDesc);
+		
 
 	}
 
@@ -206,13 +206,30 @@ namespace Mox {
 				Mox::ConstEntry(m_ShaderParamDefinitionMap[SPH_features_field].PipelineRootIndex, std::move(featFieldContent))
 			};
 
+			Mox::PipelineState& currentPSO = GraphicsAllocator::Get()->AllocatePipelineState();
+			
+			// Now the input layout desc passed to the PSO needs to contain all the shader parameters defined by the vertex shader,
+			// not just the ones of the current vertex buffer.
+			// We need to have exactly the parameters required by the shader (in any order) and for this, a temp layout desc is created
+			// and by calling BuildLeftover all the parameters will match the default input layout desc.
+			static Mox::INPUT_LAYOUT_DESC currentLayoutDesc = curMesh->m_VertexBuffer.GetLayoutDesc();
+
+			currentLayoutDesc.BuildLeftover(m_DefaultInputLayoutDesc);
+
+			// Assign the newly created input layout desc to the default PSO which for the rest, remains unchanged
+			m_DefaultPSODesc->InputLayoutDesc = currentLayoutDesc;
+
+			//Init the Pipeline State Object
+			currentPSO.Init(*m_DefaultPSODesc.get());
+
+
 			m_DrawCommands.emplace_back(
 
 				static_cast<Mox::VertexBufferView&>(*curMesh->m_VertexBuffer.GetResource()->GetView()),
 
 				static_cast<Mox::IndexBufferView&>(*curMesh->m_IndexBuffer.GetResource()->GetView()),
 
-				*m_PipelineState,
+				currentPSO,
 
 				cbvEntries,
 
@@ -227,7 +244,7 @@ namespace Mox {
 	{
 		for (const DrawCommand& dc : m_DrawCommands)
 		{
-			InCmdList.SetPipelineStateAndResourceBinder(*m_PipelineState);
+			InCmdList.SetPipelineStateAndResourceBinder(dc.m_PipelineState);
 
 			InCmdList.SetInputAssemblerData(Mox::PRIMITIVE_TOPOLOGY::PT_TRIANGLELIST, dc.m_VertexBufferView, dc.m_IndexBufferView);
 

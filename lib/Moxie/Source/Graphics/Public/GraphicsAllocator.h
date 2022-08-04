@@ -45,7 +45,7 @@ public:
 
 	virtual void UpdateStaticBufferResources(Mox::CommandList& InCmdList, const std::vector<Mox::BufferResourceUpdate>& InUpdates) = 0;
 
-	virtual Mox::VertexBuffer& AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) = 0;
+	virtual Mox::VertexBuffer& AllocateVertexBuffer(const Mox::INPUT_LAYOUT_DESC& InLayoutDesc, const void* InData, uint32_t InStride, uint32_t InSize) = 0;
 
 	virtual Mox::IndexBuffer& AllocateIndexBuffer(const void* InData, uint32_t InStride, uint32_t InSize) = 0;
 

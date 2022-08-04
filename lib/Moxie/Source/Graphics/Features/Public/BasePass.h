@@ -10,6 +10,7 @@
 #define BasePass_h__
 
 #include "RenderPass.h"
+#include "PipelineState.h"
 
 namespace Mox {
 
@@ -40,6 +41,8 @@ namespace Mox {
 		void SendDrawCommands(Mox::CommandList& InCmdList) override;
 
 	private:
+
+		std::unique_ptr<Mox::PipelineState::GRAPHICS_PSO_DESC> m_DefaultPSODesc;
 
 		// This will serve as static registrar element pattern: 
 		// it will allow to register the base pass in a static pass list

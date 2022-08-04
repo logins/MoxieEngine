@@ -243,9 +243,10 @@ namespace Mox {
 		}
 	}
 
-	Mox::VertexBuffer& D3D12GraphicsAllocator::AllocateVertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize)
+	Mox::VertexBuffer& D3D12GraphicsAllocator::AllocateVertexBuffer(const Mox::INPUT_LAYOUT_DESC& InLayoutDesc, 
+		const void* InData, uint32_t InStride, uint32_t InSize)
 	{
-		m_VertexBufferArray.emplace_back(InData, InStride, InSize);
+		m_VertexBufferArray.emplace_back(InLayoutDesc, InData, InStride, InSize);
 		return m_VertexBufferArray.back();
 	}
 

@@ -48,14 +48,8 @@ void DynBufExampleApp::OnInitializeContent()
 {		
 	// Load Content
 
-	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
+	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexLayoutDesc, m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
 	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
-
-
-
-	// Executing command list and waiting for full execution
-
-	// Create a mesh and assign it to a new world entity
 
 
 	std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>> meshShaderParamDefinitions;

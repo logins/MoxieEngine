@@ -66,7 +66,6 @@ namespace Mox {
 		// In our case, what we usually do with draw commands is iterating all of them every time, so a vector is enough.
 		std::vector<Mox::DrawCommand> m_DrawCommands; 
 
-		Mox::PipelineState* m_PipelineState;
 
 	};
 

@@ -21,8 +21,9 @@ namespace Mox {
 		Mox::UpdateConstantBufferValue(*this, InData, InSize);
 	}
 
-	VertexBuffer::VertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize)
-		: BufferResourceHolder(Mox::RES_CONTENT_TYPE::VERTEX, Mox::BUFFER_ALLOC_TYPE::STATIC, InSize, InStride)
+	VertexBuffer::VertexBuffer(const INPUT_LAYOUT_DESC& InLayoutDesc, const void* InData, uint32_t InStride, uint32_t InSize)
+		: BufferResourceHolder(Mox::RES_CONTENT_TYPE::VERTEX, Mox::BUFFER_ALLOC_TYPE::STATIC, InSize, InStride),
+		m_LayoutDesc(InLayoutDesc)
 	{
 		Mox::RequestBufferResourceForHolder(*this);
 

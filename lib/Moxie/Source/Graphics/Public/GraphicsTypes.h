@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace std {
 enum class byte : unsigned char;
@@ -256,14 +257,55 @@ protected:
 	BufferResource* m_Resource;
 };
 
+class INPUT_LAYOUT_DESC {
+public:
+	struct LayoutElement {
+		std::string m_Name;
+		Mox::BUFFER_FORMAT m_Format;
+	};
+	INPUT_LAYOUT_DESC(std::vector<LayoutElement>&& InElements)
+		: LayoutElements(InElements)
+	{
+		m_Names.reserve(InElements.size());
+		for (const LayoutElement& element : InElements)
+		{
+			m_Names.insert(element.m_Name);
+		}
+	}
+	// Names of the elements for fast look-up
+	std::unordered_set<std::string> m_Names;
+	// Ordered element sequence
+	std::vector<LayoutElement> LayoutElements;
+
+	// Insert any missing layout element from the given input
+	void BuildLeftover(const INPUT_LAYOUT_DESC& InOtherDesc)
+	{
+		const std::vector<LayoutElement>& otherElements = InOtherDesc.LayoutElements;
+		m_Names.reserve(otherElements.size());
+		LayoutElements.reserve(otherElements.size());
+		for (const LayoutElement& element : otherElements)
+		{
+			if(m_Names.find(element.m_Name) == m_Names.end())
+			{
+				LayoutElements.push_back(element);
+				m_Names.insert(element.m_Name);
+			}
+		}
+	}
+};
+
 class VertexBuffer : public BufferResourceHolder
 {
 public:
 	// Note: InSize = _countof(m_VertexData) * sizeof(DataType)
-	VertexBuffer(const void* InData, uint32_t InStride, uint32_t InSize);
+	VertexBuffer(const INPUT_LAYOUT_DESC& InLayoutDesc, const void* InData, uint32_t InStride, uint32_t InSize);
 
 	void SetBufferResource(Mox::BufferResource& InResource) override { m_Resource = &InResource; };
 
+	const INPUT_LAYOUT_DESC& GetLayoutDesc() const { return m_LayoutDesc; }
+
+private:
+	INPUT_LAYOUT_DESC m_LayoutDesc;
 };
 
 class IndexBuffer : public BufferResourceHolder

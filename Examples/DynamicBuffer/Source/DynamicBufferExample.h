@@ -55,6 +55,12 @@ private:
 		Mox::Vector3f Color;
 	};
 
+	const Mox::INPUT_LAYOUT_DESC m_VertexLayoutDesc = {
+	{
+		{"POSITION",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
+		{"COLOR",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
+	}};
+
 	const VertexPosColor m_VertexData[8] = {
 		{ Mox::Vector3f(-1.f, -1.f, -1.f), Mox::Vector3f(0.f, 0.f, 0.f) }, // 0
 		{ Mox::Vector3f(-1.f, 1.f, -1.f), Mox::Vector3f(0.f, 1.f, 0.f) }, // 1

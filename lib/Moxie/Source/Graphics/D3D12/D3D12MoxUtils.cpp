@@ -370,15 +370,26 @@ namespace Mox
 		viewDesc.Format = Mox::BufferFormatToD3D12(InTexture.GetFormat());
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-		if (InTexture.GetType() == Mox::TEXTURE_TYPE::TEX_CUBE)
+		switch(InTexture.GetType())
+		{
+		case Mox::TEXTURE_TYPE::TEX_CUBE:
 		{
 			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			viewDesc.TextureCube.MipLevels = InTexture.GetMipLevelsNum();
 		}
-		else
+		break;
+		case TEXTURE_TYPE::TEX_2D:
+		{
+			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			viewDesc.Texture2D.MipLevels = InTexture.GetMipLevelsNum();
+		}
+		break;
+		default:
 		{
 			StopForFail("SRV referenced texture type not handled yet!")
 		}
+		}
+
 
 		// Instantiate View
 		Mox::D3D12Device& d3d12Device = static_cast<Mox::D3D12Device&>(Mox::GetDevice());

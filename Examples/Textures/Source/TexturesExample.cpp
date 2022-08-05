@@ -47,25 +47,49 @@ int main()
 void TexturesExampleApplication::OnInitializeContent()
 {
 	// Load Content
-
-	m_VertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_VertexLayoutDesc, m_VertexData, sizeof(VertexPosColor), sizeof(m_VertexData)); // TODO can we deduce these last two elements from compiler??
-	m_IndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(m_IndexData, sizeof(unsigned short), sizeof(m_IndexData));
+/*
+	m_CubemapVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(m_CubemapVertexLayoutDesc, m_CubemapVertexData, sizeof(CubemapVertex), sizeof(m_CubemapVertexData)); // TODO can we deduce these last two elements from compiler??
+	m_CubemapIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(m_CubemapIndexData, sizeof(unsigned short), sizeof(m_CubemapIndexData));
 
 	m_CubeEntity = &AddEntity({ Mox::Vector3f::Zero() });
 
 	// Create the cubemap texture
-	m_Cubemap = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMap.dds));
+	m_CubemapTexture = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMap.dds));
 
 	// Set it as shader parameter
 	Mox::TextureMeshParams meshShaderParamDefinitions {
-		{Mox::HashSpName("cube_tex"), m_Cubemap.get()}
+		{Mox::HashSpName("cube_tex"), m_CubemapTexture.get()}
 	};
 
 	std::unique_ptr<Mox::MeshComponent> cubeMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{ 
-			m_CubeEntity, m_VertexBuffer, m_IndexBuffer, Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions) });
+			m_CubeEntity, m_CubemapVertexBuffer, m_CubemapIndexBuffer, Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions) });
 	
 	m_CubeEntity->AddComponent(std::move(cubeMesh));
+	*/
+
+	// ----- QUAD -----
+
+	m_QuadVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
+		m_QuadVertexLayoutDesc, m_QuadVertexData, sizeof(QuadVertex), sizeof(m_QuadVertexData)); // TODO can we deduce these last two elements from compiler??
+	m_QuadIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
+		m_QuadIndexData, sizeof(unsigned short), sizeof(m_QuadIndexData));
+
+	m_QuadEntity = &AddEntity({ Mox::Vector3f::Zero() });
+
+	// Create the Quad texture
+	// Texture courtesy of https://www.solarsystemscope.com/textures/
+	m_QuadTexture = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(MarsMap.dds));
+	// Set it as shader parameter
+	Mox::TextureMeshParams meshShaderParamDefinitions{
+		{Mox::HashSpName("albedo_tex"), m_QuadTexture.get()}
+	};
+	// Create mesh component and add it to the entity
+	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
+		Mox::DrawableCreationInfo{
+			m_QuadEntity, m_QuadVertexBuffer, m_QuadIndexBuffer, Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions) });
+
+	m_QuadEntity->AddComponent(std::move(quadMesh));
 
 
 	// Window events delegates
@@ -79,7 +103,7 @@ void TexturesExampleApplication::OnMouseWheel(float InDeltaRot)
 {
 	static float curScale = 1.0f;
 	curScale = std::clamp<float>(curScale + (InDeltaRot > 0 ? 0.4f : -0.4f), 0.1f, 3.f);
-	m_CubeEntity->SetScale(curScale, 1.0, 1.0);
+	m_QuadEntity->SetScale(curScale, 1.0, 1.0);
 
 
 }
@@ -97,14 +121,14 @@ void TexturesExampleApplication::OnMouseMove(int32_t InX, int32_t InY)
 
 void TexturesExampleApplication::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	m_CubeEntity->Rotate(
+	m_QuadEntity->Rotate(
 		-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()),
 		-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()));
 }
 
 void TexturesExampleApplication::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	m_CubeEntity->Translate(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0.f);
+	m_QuadEntity->Translate(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0.f);
 }
 
 void TexturesExampleApplication::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)

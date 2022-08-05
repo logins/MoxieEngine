@@ -97,6 +97,7 @@ struct GPUVirtualAddress {
 enum class BUFFER_FORMAT : uint8_t {
 	R16_UINT, // Single channel 16 bits
 	R32G32B32_FLOAT,
+	R32G32_FLOAT,
 	R8G8B8A8_UNORM,
 	B8G8R8A8_UNORM,
 	D32_FLOAT,
@@ -423,7 +424,7 @@ protected:
 struct ShaderResourceView : public ResourceView {
 	virtual void InitAsTex2DOrCubemap(Mox::TextureResource& InTexture) = 0;
 
-	static ShaderResourceView* GetNullTex2D() { return m_NullTex2DSrv.get(); }
+	static ShaderResourceView* GetNull2D() { return m_NullTex2DSrv.get(); }
 	static ShaderResourceView* GetNullCube() { return m_NullCubeSrv.get(); }
 
 protected:

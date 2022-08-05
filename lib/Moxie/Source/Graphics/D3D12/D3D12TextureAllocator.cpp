@@ -111,7 +111,7 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 				updateDesc.m_TotalSize		// DepthPitch
 			};
 
-			mip0Footprints[i] = curTexResource.GetSubresourceFootprints()[i * texResourceDesc.MipLevels];
+			mip0Footprints[i] = curTexResource.GetSubresourceFootprints()[i];
 		}
 
 			

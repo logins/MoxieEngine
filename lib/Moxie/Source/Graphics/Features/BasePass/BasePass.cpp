@@ -104,7 +104,7 @@ namespace Mox {
 		resourceBinderDesc.Params.emplace(resourceBinderDesc.Params.end(), std::move(cubemapParam));
 
 		// Static sampler for the cubemap
-		resourceBinderDesc.StaticSamplers.emplace_back(0, SAMPLE_FILTER_TYPE::LINEAR);
+		resourceBinderDesc.StaticSamplers.emplace_back(0, SAMPLE_FILTER_TYPE::LINEAR, TEXTURE_ADDRESS_MODE::CLAMP);
 
 		
 

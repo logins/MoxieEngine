@@ -116,7 +116,8 @@ enum class RESOURCE_HEAP_TYPE : uint8_t {
 };
 
 enum class RESOURCE_STATE : uint8_t {
-	PRESENT = 0,
+	NEUTRAL,
+	PRESENT,
 	RENDER_TARGET,
 	COPY_SOURCE,
 	COPY_DEST,

@@ -94,7 +94,7 @@ public:
 	void AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest) override;
 
 	Mox::D3D12Resource& AllocateD3D12Resource(D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, 
-		Mox::RESOURCE_STATE InState, uint32_t InSize = 1, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE);
+		uint32_t InSize = 1, Mox::RESOURCE_FLAGS InFlags = RESOURCE_FLAGS::NONE);
 
 	// D3D12 Specific
 	Mox::D3D12Resource& AllocateD3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3D12Res, D3D12_RES_TYPE InResType, size_t InSize = 1);

@@ -34,18 +34,18 @@ namespace Mox {
 
 		// Allocate an empty resource and create the dynamic buffer allocator on it
 		// Note: We are using a system similar to what described for Diligent Engine https://www.codeproject.com/Articles/1094799/Implementing-Dynamic-Resources-with-Direct-D
-		Mox::D3D12Resource& dynamicBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& dynamicBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD);
 
 		m_DynamicBufferAllocator = std::make_unique<Mox::D3D12DynamicBufferAllocator>(dynamicBufferResource);
 
 
-		Mox::D3D12Resource& targetBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::DEFAULT, RESOURCE_STATE::GEN_READ);
-		Mox::D3D12Resource& stagingBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ);
+		Mox::D3D12Resource& targetBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::DEFAULT);
+		Mox::D3D12Resource& stagingBufferResource = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD);
 
 		m_StaticBufferAllocator = std::make_unique<Mox::D3D12StaticBufferAllocator>(targetBufferResource, stagingBufferResource);
 
 
-		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, RESOURCE_STATE::GEN_READ, 4194304);
+		Mox::D3D12Resource& stagingBufferResourceForTextures = AllocateD3D12Resource(D3D12_RES_TYPE::Buffer, RESOURCE_HEAP_TYPE::UPLOAD, 4194304);
 
 		m_TextureAllocator = std::make_unique<Mox::D3D12TextureAllocator>(4194304, stagingBufferResourceForTextures);
 	}
@@ -89,9 +89,11 @@ namespace Mox {
 
 	Mox::D3D12Resource& D3D12GraphicsAllocator::AllocateD3D12Resource(
 		D3D12_RES_TYPE InResType, Mox::RESOURCE_HEAP_TYPE InHeapType, 
-		Mox::RESOURCE_STATE InState, uint32_t InSize /*= 1*/, Mox::RESOURCE_FLAGS InFlags /*= RESOURCE_FLAGS::NONE*/)
+		uint32_t InSize /*= 1*/, Mox::RESOURCE_FLAGS InFlags /*= RESOURCE_FLAGS::NONE*/)
 	{
-		m_GraphicsResources.emplace_back(Mox::D3D12Resource(Mox::D3D12_RES_TYPE::Buffer, InHeapType, InSize, InFlags, InState));
+		// Note: D3D12 Buffers will be created with D3D12_RESOURCE_STATE_COMMON without possibility to choose
+		m_GraphicsResources.emplace_back(Mox::D3D12Resource(
+			Mox::D3D12_RES_TYPE::Buffer, InHeapType, InSize, InFlags, Mox::RESOURCE_STATE::NEUTRAL));
 
 		return m_GraphicsResources.back();
 	}

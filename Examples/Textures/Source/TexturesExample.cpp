@@ -58,20 +58,20 @@ void TexturesExampleApplication::OnInitializeContent()
 	auto uvsIt = sphereMeshUvs.begin();
 	for (const Mox::Vector3f& pos : sphereMeshVertices)
 	{
-		sphereVbData.push_back({ pos, *uvsIt });
+		sphereVbData.push_back({ pos, pos }); // Using vertex local position as cube UV coordinates
 		++uvsIt;
 	}
 
 	// ----- QUAD -----
 
-	m_QuadVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
-		m_QuadVertexLayoutDesc, 
+	m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
+		m_SphereVertexLayoutDesc, 
 		sphereVbData.data(),
 		sizeof(QuadVertex), 
 		sizeof(QuadVertex) * sphereVbData.size()
 	); // TODO can we deduce these last two elements from compiler??
 	
-	m_QuadIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
+	m_SphereIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
 		sphereMeshIndices.data(),
 		sizeof(uint16_t),
 		sizeof(uint16_t) * sphereMeshIndices.size()
@@ -81,15 +81,15 @@ void TexturesExampleApplication::OnInitializeContent()
 
 	// Create the Quad texture
 	// Texture courtesy of https://www.solarsystemscope.com/textures/
-	m_QuadTexture = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(MarsMap.dds));
+	m_SphereCubeTexture = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMarsMap.dds));
 	// Set it as shader parameter
 	Mox::TextureMeshParams meshShaderParamDefinitions{
-		{Mox::HashSpName("albedo_tex"), m_QuadTexture.get()}
+		{Mox::HashSpName("albedo_cube"), m_SphereCubeTexture.get()}
 	};
 	// Create mesh component and add it to the entity
 	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
-			m_QuadEntity, m_QuadVertexBuffer, m_QuadIndexBuffer, Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions) });
+			m_QuadEntity, m_SphereVertexBuffer, m_SphereIndexBuffer, Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions) });
 
 	m_QuadEntity->AddComponent(std::move(quadMesh));
 	// ----- ENDS QUAD -----

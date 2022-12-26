@@ -19,13 +19,13 @@ struct VertexPosColor
 {
     float3 Position : POSITION;
     float3 Color : COLOR;
-    float2 TextureCoords : TEXCOORD;
+    float3 TextureCoords : TEXCOORD;
 };
 
 struct VertexShaderOutput
 {
     float3 Color : COLOR0;
-    float2 TextureCoords : TEXCOORD0;
+    float3 TextureCoords : TEXCOORD0;
     // Note: Position is the last one since in pixel shader we just need Color and TextureCoords 
     // so we can just define a smaller pixel input struct.
     float4 Position : SV_POSITION; // Every vertex shader must write out a parameter with this semantic.

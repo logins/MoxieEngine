@@ -22,13 +22,14 @@
 // Note: important to set static const for literals, otherwise these will be interpreted as buffers!
 static const uint DRAW_FEATURES_COLOR_MOD = 1;
 static const uint DRAW_FEATURES_COLOR_TEX = 2;
+static const uint DRAW_FEATURES_COLOR_CUBE = 4;
 
 // Note: Both COLOR and TEXCOORD are float4 system value semantics, but it's possible to define them smaller
 // https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-semantics
 struct PixelShaderInput
 {
     float3 PrimitiveColor : COLOR0;
-    float2 TextureCoords : TEXCOORD0;
+    float3 TextureCoords : TEXCOORD0;
 };
 
 // Structs are required for ConstantBuffer type parameters..
@@ -52,19 +53,26 @@ ConstantBuffer<UIntBuf> FeaturesFieldCB : register(b0, space1);
 ConstantBuffer<FloatBuf> ColorModifierCB : register(b1, space1);
 
 Texture2D ColorTexture : register(t0, space1);
+TextureCube ColorCube : register(t1, space1);
 
 SamplerState TexSampler : register(s0); // Note: Since we are using a static sampler, we do not specify a register space
 
 
 float4 main(PixelShaderInput IN) : SV_Target
 {
-    // If cubemap is active, start from color sampled from it
+    // If texture is active, start from color sampled from it
     if (FeaturesFieldCB.value & DRAW_FEATURES_COLOR_TEX)
     {
-        IN.PrimitiveColor = ColorTexture.Sample(TexSampler, IN.TextureCoords).xyz;
+        IN.PrimitiveColor = ColorTexture.Sample(TexSampler, IN.TextureCoords.xy).xyz;
         // Sample function documentation at this page
         // https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-to-sample
     }
+    // If cube is active, start from color sampled from it
+    else if (FeaturesFieldCB.value & DRAW_FEATURES_COLOR_CUBE)
+    {
+        IN.PrimitiveColor = ColorCube.Sample(TexSampler, IN.TextureCoords.xyz).xyz;
+    }
+
     if (FeaturesFieldCB.value & DRAW_FEATURES_COLOR_MOD)
     {
         IN.PrimitiveColor *= ColorModifierCB.value;

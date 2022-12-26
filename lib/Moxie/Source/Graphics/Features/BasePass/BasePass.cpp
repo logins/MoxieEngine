@@ -24,6 +24,8 @@ namespace Mox {
 	static constexpr SpHash SPH_c_mod = Mox::HashSpName("c_mod");
 
 	// Cubemap texture
+	static constexpr SpHash SPH_albedo_cube = Mox::HashSpName("albedo_cube");
+
 	static constexpr SpHash SPH_albedo_tex = Mox::HashSpName("albedo_tex");
 
 	static constexpr SpHash SPH_features_field = Mox::HashSpName("features_field");
@@ -31,7 +33,8 @@ namespace Mox {
 	enum DRAW_FEATURES : uint32_t
 	{
 		COLOR_MOD = 1,
-		COLOR_TEX = 2
+		COLOR_TEX = 2,
+		COLOR_CUBE = 4,
 	};
 
 	// Hashmap holding information about shader parameters that the pipeline requires for drawing.
@@ -44,7 +47,7 @@ namespace Mox {
 	static Mox::INPUT_LAYOUT_DESC m_DefaultInputLayoutDesc{ {
 		{"POSITION",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
 		{"COLOR",Mox::BUFFER_FORMAT::R32G32B32_FLOAT},
-		{"TEXCOORD",Mox::BUFFER_FORMAT::R32G32_FLOAT}
+		{"TEXCOORD",Mox::BUFFER_FORMAT::R32G32B32_FLOAT}
 	}
 	};
 
@@ -60,7 +63,8 @@ namespace Mox {
 			{SPH_mvp, {0, "mvp", Mox::SHADER_PARAM_TYPE::CONSTANT_BUFFER, 0, 0}},
 			{SPH_features_field, {1, "features_field", Mox::SHADER_PARAM_TYPE::CONSTANT_BUFFER, 0, 1}},
 			{SPH_c_mod, {2, "c_mod", Mox::SHADER_PARAM_TYPE::CONSTANT_BUFFER, 1, 1}},
-			{SPH_albedo_tex, {3, "albedo_tex", Mox::SHADER_PARAM_TYPE::TEXTURE, 0, 1}}
+			{SPH_albedo_tex, {3, "albedo_tex", Mox::SHADER_PARAM_TYPE::TEXTURE, 0, 1}},
+			{SPH_albedo_cube, {4, "albedo_cube", Mox::SHADER_PARAM_TYPE::TEXTURE, 1, 1}},
 		};
 
 		//Create Root Signature
@@ -96,9 +100,16 @@ namespace Mox {
 
 		resourceBinderDesc.Params.emplace(resourceBinderDesc.Params.end(), std::move(colorModifierParam));
 
+		// 2D texture
+		Mox::PipelineState::RESOURCE_BINDER_PARAM texParam;
+		const Mox::ShaderParameterDefinition& texSpInfo = m_ShaderParamDefinitionMap[SPH_albedo_tex];
+		texParam.InitAsTableSRVRange(1, texSpInfo.m_RegisterIndex, texSpInfo.m_SpaceIndex, Mox::SHADER_VISIBILITY::SV_PIXEL);
+
+		resourceBinderDesc.Params.emplace(resourceBinderDesc.Params.end(), std::move(texParam));
+
 		// Cubemap texture
 		Mox::PipelineState::RESOURCE_BINDER_PARAM cubemapParam;
-		const Mox::ShaderParameterDefinition& cubemapSpInfo = m_ShaderParamDefinitionMap[SPH_albedo_tex];
+		const Mox::ShaderParameterDefinition& cubemapSpInfo = m_ShaderParamDefinitionMap[SPH_albedo_cube];
 		cubemapParam.InitAsTableSRVRange(1, cubemapSpInfo.m_RegisterIndex, cubemapSpInfo.m_SpaceIndex, Mox::SHADER_VISIBILITY::SV_PIXEL);
 
 		resourceBinderDesc.Params.emplace(resourceBinderDesc.Params.end(), std::move(cubemapParam));
@@ -154,22 +165,43 @@ namespace Mox {
 			// SRV entries -----
 			std::vector<SrvEntry> srvEntries;
 
-			std::unordered_map<Mox::SpHash, Mox::Texture*>::const_iterator cubeTexParamValue = curMesh->m_TextureShaderParameters.find(SPH_albedo_tex);
+			// Cube param
+
+			std::unordered_map<Mox::SpHash, Mox::Texture*>::const_iterator cubeTexParamValue = curMesh->m_TextureShaderParameters.find(SPH_albedo_cube);
 
 			Mox::ShaderResourceView* CubeTexSrv;
 
 			if (cubeTexParamValue != curMesh->m_TextureShaderParameters.cend())
 			{
-				featuresFiled |= DRAW_FEATURES::COLOR_TEX;
+				featuresFiled |= DRAW_FEATURES::COLOR_CUBE;
 				CubeTexSrv = cubeTexParamValue->second->GetResource()->GetView();
 			}
 			else
 			{
 				// Bind null descriptor
-				CubeTexSrv = Mox::ShaderResourceView::GetNull2D();
+				CubeTexSrv = Mox::ShaderResourceView::GetNullCube();
 			}
 
-			srvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_albedo_tex].PipelineRootIndex, CubeTexSrv);
+			srvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_albedo_cube].PipelineRootIndex, CubeTexSrv);
+
+			// Tex param
+
+			std::unordered_map<Mox::SpHash, Mox::Texture*>::const_iterator texParamValue = curMesh->m_TextureShaderParameters.find(SPH_albedo_tex);
+
+			Mox::ShaderResourceView* texSrv;
+
+			if (texParamValue != curMesh->m_TextureShaderParameters.cend())
+			{
+				featuresFiled |= DRAW_FEATURES::COLOR_TEX;
+				texSrv = texParamValue->second->GetResource()->GetView();
+			}
+			else
+			{
+				// Bind null descriptor
+				texSrv = Mox::ShaderResourceView::GetNull2D();
+			}
+
+			srvEntries.emplace_back(m_ShaderParamDefinitionMap[SPH_albedo_tex].PipelineRootIndex, texSrv);
 
 			// CBV entries -----
 			std::vector<CbvEntry> cbvEntries;

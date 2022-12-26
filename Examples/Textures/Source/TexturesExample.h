@@ -3,7 +3,7 @@
 
  Moxie Engine - https://github.com/logins/MoxieEngine
 
- MIT License - Copyright (c) 2021 Riccardo Loggini
+ MIT License - Copyright (c) 2022 Riccardo Loggini
 */
 
 #ifndef TexturesExample_h__
@@ -36,7 +36,7 @@ private:
 	Mox::IndexBuffer* m_SphereIndexBuffer;
 	std::unique_ptr<Mox::Texture> m_SphereCubeTexture;
 
-	Mox::Entity* m_QuadEntity;
+	Mox::Entity* m_SphereEntity;
 
 	struct QuadVertex {
 		Mox::Vector3f Position;

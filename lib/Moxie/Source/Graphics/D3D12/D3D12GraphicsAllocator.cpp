@@ -237,9 +237,7 @@ namespace Mox {
 	{
 		for (const Mox::DrawableCreationInfo& drawableReq : InRequests)
 		{
-			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(
-				*drawableReq.m_VertexBuffer, *drawableReq.m_IndexBuffer, 
-				drawableReq.m_BufferShaderParameters, drawableReq.m_TextureShaderParameters));
+			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(drawableReq));
 			
 			drawableReq.m_OwningEntity->GetRenderProxy()->AddDrawable(m_DrawableArray.back().get());
 		}

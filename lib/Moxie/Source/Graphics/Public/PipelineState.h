@@ -104,6 +104,7 @@ public:
 		Mox::Shader& PixelShader;
 		Mox::BUFFER_FORMAT DSFormat;
 		Mox::BUFFER_FORMAT RTFormat; //Note: considering a single render target even though platforms support many (there is a maximum of 8 render targets in D3D12)
+		bool RenderBackfaces;
 	};
 
 	struct COMPUTE_PSO_DESC {

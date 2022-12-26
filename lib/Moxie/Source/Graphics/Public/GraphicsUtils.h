@@ -129,8 +129,10 @@ namespace Mox {
 		Mox::Entity* m_OwningEntity;
 		Mox::VertexBuffer* m_VertexBuffer;
 		Mox::IndexBuffer* m_IndexBuffer;
+		// Note: The following can later come from a material associated to this drawable
 		BufferMeshParams m_BufferShaderParameters;
 		TextureMeshParams m_TextureShaderParameters;
+		bool m_RenderBackfaces = false;
 	};
 
 	// Used by the simulation thread to transfer object changes to the render thread

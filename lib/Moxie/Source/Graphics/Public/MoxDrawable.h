@@ -23,13 +23,14 @@ struct VertexBufferView;
 struct IndexBufferView;
 
 
-
+/*
+	A Drawable contains single drawing information used by render passes.
+	It is meant to be used in the render thread where most of the render code lives.
+*/
 class Drawable
 {
 public:
-	Drawable(Mox::VertexBuffer& InVertexBuffer, Mox::IndexBuffer& InIndexBuffer, 
-		const std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>& InBufferShaderParams,
-		const std::vector<std::tuple<Mox::SpHash, Mox::Texture*>>& InTextureShaderParams);
+	Drawable(const Mox::DrawableCreationInfo& InCreationInfo);
 
 	virtual ~Drawable();
 
@@ -40,14 +41,17 @@ public:
 	// Translation, Rotation and Scale
 
 	// Vertex and Index data
-	Mox::VertexBuffer& m_VertexBuffer;
-	Mox::IndexBuffer& m_IndexBuffer;
+	const Mox::VertexBuffer& m_VertexBuffer;
+	const Mox::IndexBuffer& m_IndexBuffer;
 
 
 	// Shader parameter hash -> Buffer
 	std::unordered_map<Mox::SpHash, Mox::ConstantBuffer*> m_BufferShaderParameters;
 	// Shader parameter hash -> Texture
 	std::unordered_map<Mox::SpHash, Mox::Texture*> m_TextureShaderParameters;
+
+	// If to consider backfaces as the ones to render for this drawable
+	bool m_RenderBackfaces = false;
 
 	Mox::Material& m_Material;
 };

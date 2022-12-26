@@ -3,7 +3,7 @@
 
  Moxie Engine - https://github.com/logins/MoxieEngine
 
- MIT License - Copyright (c) 2021 Riccardo Loggini
+ MIT License - Copyright (c) 2022 Riccardo Loggini
 */
  
 #include "TexturesExample.h"
@@ -62,7 +62,7 @@ void TexturesExampleApplication::OnInitializeContent()
 		++uvsIt;
 	}
 
-	// ----- QUAD -----
+	// ----- SPHERE -----
 
 	m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
 		m_SphereVertexLayoutDesc, 
@@ -77,9 +77,9 @@ void TexturesExampleApplication::OnInitializeContent()
 		sizeof(uint16_t) * sphereMeshIndices.size()
 	);
 
-	m_QuadEntity = &AddEntity({ Mox::Vector3f::Zero() });
+	m_SphereEntity = &AddEntity({ Mox::Vector3f::Zero() });
 
-	// Create the Quad texture
+	// Create the sphere cube texture
 	// Texture courtesy of https://www.solarsystemscope.com/textures/
 	m_SphereCubeTexture = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(CubeMarsMap.dds));
 	// Set it as shader parameter
@@ -89,10 +89,12 @@ void TexturesExampleApplication::OnInitializeContent()
 	// Create mesh component and add it to the entity
 	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
-			m_QuadEntity, m_SphereVertexBuffer, m_SphereIndexBuffer, Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions) });
+			m_SphereEntity, m_SphereVertexBuffer, m_SphereIndexBuffer, 
+			Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions),
+			});
 
-	m_QuadEntity->AddComponent(std::move(quadMesh));
-	// ----- ENDS QUAD -----
+	m_SphereEntity->AddComponent(std::move(quadMesh));
+	// ----- ENDS SPHERE -----
 
 
 
@@ -105,7 +107,7 @@ void TexturesExampleApplication::OnInitializeContent()
 
 void TexturesExampleApplication::OnMouseWheel(float InDeltaRot)
 {
-	m_QuadEntity->Translate(0, 0, (InDeltaRot > 0 ? 1 : -1));
+	m_SphereEntity->Translate(0, 0, (InDeltaRot > 0 ? 1 : -1));
 
 }
 
@@ -122,14 +124,14 @@ void TexturesExampleApplication::OnMouseMove(int32_t InX, int32_t InY)
 
 void TexturesExampleApplication::OnLeftMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	m_QuadEntity->Rotate(
+	m_SphereEntity->Rotate(
 		-InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()),
 		-InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()));
 }
 
 void TexturesExampleApplication::OnRightMouseDrag(int32_t InDeltaX, int32_t InDeltaY)
 {
-	m_QuadEntity->Translate(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0.f);
+	m_SphereEntity->Translate(InDeltaX / static_cast<float>(m_MainWindow->GetFrameWidth()), -InDeltaY / static_cast<float>(m_MainWindow->GetFrameHeight()), 0.f);
 }
 
 void TexturesExampleApplication::OnTypingKeyPressed(Mox::KEYBOARD_KEY InKeyPressed)

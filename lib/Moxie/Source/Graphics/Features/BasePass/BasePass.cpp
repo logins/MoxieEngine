@@ -251,6 +251,10 @@ namespace Mox {
 			// Assign the newly created input layout desc to the default PSO which for the rest, remains unchanged
 			m_DefaultPSODesc->InputLayoutDesc = currentLayoutDesc;
 
+			// If to render backfaces or front faces
+			m_DefaultPSODesc->RenderBackfaces = curMesh->m_RenderBackfaces;
+
+
 			//Init the Pipeline State Object
 			currentPSO.Init(*m_DefaultPSODesc.get());
 

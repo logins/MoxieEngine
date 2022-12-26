@@ -164,6 +164,7 @@ namespace Mox{
 			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
 			CD3DX12_PIPELINE_STATE_STREAM_VS VertexShader;
 			CD3DX12_PIPELINE_STATE_STREAM_PS PixelShader;
+			CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
 			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
 		} pipelineStateStream;
@@ -173,6 +174,9 @@ namespace Mox{
 		pipelineStateStream.PrimitiveTopology = Mox::PrimitiveTopologyTypeToD3D12(InPipelineStateDesc.TopologyType);
 		pipelineStateStream.InputLayout = { &layoutElements[0], static_cast<UINT>(layoutElements.size()) };
 		pipelineStateStream.VertexShader = CD3DX12_SHADER_BYTECODE(static_cast<Mox::D3D12Shader&>(InPipelineStateDesc.VertexShader).m_ShaderBlob.Get());
+		CD3DX12_RASTERIZER_DESC rasterDesc = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT());
+		rasterDesc.FrontCounterClockwise = InPipelineStateDesc.RenderBackfaces;
+		pipelineStateStream.Rasterizer = rasterDesc;
 		pipelineStateStream.PixelShader = CD3DX12_SHADER_BYTECODE(static_cast<Mox::D3D12Shader&>(InPipelineStateDesc.PixelShader).m_ShaderBlob.Get());
 		pipelineStateStream.DSVFormat = Mox::BufferFormatToD3D12(InPipelineStateDesc.DSFormat);
 		pipelineStateStream.RTVFormats = rtvFormats;

@@ -12,19 +12,16 @@
 
 namespace Mox {
 
-Drawable::Drawable(Mox::VertexBuffer& InVertexBuffer, Mox::IndexBuffer& InIndexBuffer,
-	const std::vector<std::tuple<Mox::SpHash, Mox::ConstantBuffer*>>& InBufferShaderParams,
-	const std::vector<std::tuple<Mox::SpHash, Mox::Texture*>>& InTextureShaderParams)
-	: m_VertexBuffer(InVertexBuffer), m_IndexBuffer(InIndexBuffer),
-	m_Material(Mox::Material::DefaultMaterial)
+Drawable::Drawable(const Mox::DrawableCreationInfo& InCreationInfo)
+	: m_VertexBuffer(*InCreationInfo.m_VertexBuffer), m_IndexBuffer(*InCreationInfo.m_IndexBuffer),
+	m_RenderBackfaces(InCreationInfo.m_RenderBackfaces), m_Material(Mox::Material::DefaultMaterial)
 {
-	
-	for (const std::tuple<Mox::SpHash, Mox::ConstantBuffer*>& newCbParam : InBufferShaderParams)
+	for (const std::tuple<Mox::SpHash, Mox::ConstantBuffer*>& newCbParam : InCreationInfo.m_BufferShaderParameters)
 	{
 		auto [paramHash, bufPtr] = newCbParam;
 		SetCbShaderParamValue(paramHash, bufPtr);
 	}
-	for (const std::tuple<Mox::SpHash, Mox::Texture*>& newTexParam : InTextureShaderParams)
+	for (const std::tuple<Mox::SpHash, Mox::Texture*>& newTexParam : InCreationInfo.m_TextureShaderParameters)
 	{
 		auto [paramHash, texPtr] = newTexParam;
 		SetTexShaderParamValue(paramHash, texPtr);

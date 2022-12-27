@@ -16,9 +16,12 @@ namespace Mox {
 
 
 Entity::Entity(const Mox::EntityCreationInfo& InInfo)
-	: m_WorldMatrix(Mox::ModelMatrix(InInfo.WorldPosition, Mox::Vector3f(1, 1, 1), Mox::Vector3f(0, 0, 0))),
+	: m_WorldMatrix(Mox::ModelMatrix(InInfo.WorldPosition, InInfo.WorldScale, InInfo.WorldRotation)),
 	m_WorldPos(InInfo.WorldPosition),m_WorldScale(Mox::Matrix3f::Identity()),m_WorldRot(Mox::Matrix3f::Identity())
 {
+	SetScale(InInfo.WorldScale.x(), InInfo.WorldScale.y(), InInfo.WorldScale.z());
+	Rotate(InInfo.WorldRotation.x(), InInfo.WorldRotation.y());
+
 	Mox::RequestRenderProxyForEntity(*this);
 }
 

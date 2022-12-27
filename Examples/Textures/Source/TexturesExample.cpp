@@ -48,12 +48,49 @@ void TexturesExampleApplication::OnInitializeContent()
 {
 	// Load Content
 
+
+
+	// ----- QUAD -----
+
+	m_QuadVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
+		m_VertexLayoutDesc,
+		&m_QuadVertexData,
+		sizeof(TexVertexType),
+		sizeof(m_QuadVertexData)
+	);
+
+	m_QuadIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
+		&m_QuadIndexData,
+		sizeof(uint16_t),
+		sizeof(m_QuadIndexData)
+	);
+
+	m_QuadEntity = &AddEntity(Mox::EntityCreationInfo{ Mox::Vector3f(2.5f,-2.5f,0),Mox::Vector3f::Zero(), Mox::Vector3f(1.5f,1.5f,1.5f) });
+
+	m_QuadTexture = std::make_unique<Mox::Texture>(TEXTURES_EXAMPLE_CONTENT_PATH(MarsMap.dds));
+	// Set it as shader parameter
+	Mox::TextureMeshParams quadMeshShaderParamDefinitions = Mox::TextureMeshParams{
+		{Mox::HashSpName("albedo_tex"), m_QuadTexture.get()}
+	};
+	// Create mesh component and add it to the entity
+	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
+		Mox::DrawableCreationInfo{
+			m_QuadEntity, m_QuadVertexBuffer, m_QuadIndexBuffer,
+			Mox::BufferMeshParams(), std::move(quadMeshShaderParamDefinitions),
+		});
+
+	m_QuadEntity->AddComponent(std::move(quadMesh));
+
+	// ----- QUAD ENDS -----
+
+	// ----- SPHERE -----
+
 	static std::vector<Mox::Vector3f> sphereMeshVertices;
 	static std::vector<Mox::Vector2f> sphereMeshUvs;
 	static std::vector<uint16_t> sphereMeshIndices;
 	Mox::UVSphere(15, 15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
 	//Mox::NormalizedCube(15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
-	static std::vector<QuadVertex> sphereVbData; 
+	static std::vector<TexVertexType> sphereVbData; 
 	sphereVbData.reserve(sphereMeshVertices.size());
 	auto uvsIt = sphereMeshUvs.begin();
 	for (const Mox::Vector3f& pos : sphereMeshVertices)
@@ -62,13 +99,11 @@ void TexturesExampleApplication::OnInitializeContent()
 		++uvsIt;
 	}
 
-	// ----- SPHERE -----
-
 	m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
-		m_SphereVertexLayoutDesc, 
+		m_VertexLayoutDesc, 
 		sphereVbData.data(),
-		sizeof(QuadVertex), 
-		sizeof(QuadVertex) * sphereVbData.size()
+		sizeof(TexVertexType), 
+		sizeof(TexVertexType) * sphereVbData.size()
 	); // TODO can we deduce these last two elements from compiler??
 	
 	m_SphereIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
@@ -87,13 +122,13 @@ void TexturesExampleApplication::OnInitializeContent()
 		{Mox::HashSpName("albedo_cube"), m_SphereCubeTexture.get()}
 	};
 	// Create mesh component and add it to the entity
-	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
+	std::unique_ptr<Mox::MeshComponent> sphereMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
 			m_SphereEntity, m_SphereVertexBuffer, m_SphereIndexBuffer, 
 			Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions),
 			});
 
-	m_SphereEntity->AddComponent(std::move(quadMesh));
+	m_SphereEntity->AddComponent(std::move(sphereMesh));
 	// ----- ENDS SPHERE -----
 
 

@@ -1,4 +1,4 @@
-# ----- EXAMPLE: DYNAMIC BUFFER -----
+# ----- EXAMPLE: TEXTURES -----
 add_executable(example_textures "Source/TexturesExample.cpp" "Source/TexturesExample.h")
 
 target_link_libraries(example_textures moxie)

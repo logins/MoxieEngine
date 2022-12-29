@@ -19,7 +19,7 @@ struct DrawableCreationInfo;
 class MeshComponent : public Component
 {
 public:
-	MeshComponent(DrawableCreationInfo&& InCreationInfo);
+	MeshComponent(DrawableCreationInfo&& InCreationInfo, Mox::Entity& InOwningEntity);
 
 	virtual ~MeshComponent();
 

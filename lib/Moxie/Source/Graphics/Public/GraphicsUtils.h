@@ -86,12 +86,13 @@ namespace Mox {
 		Mox::Texture* m_TargetTexture;
 	};
 
+	class RenderProxy;
 
 	// When the render proxy will be created for the target entity, 
 	// the render resources for the bound meshes will be created as well
 	struct RenderProxyRequest
 	{
-		Mox::Entity* m_TargetEntity;
+		std::shared_ptr<RenderProxy> m_TargetProxy;
 
 		RenderProxyRequest(Mox::Entity& InEntity);
 
@@ -126,7 +127,7 @@ namespace Mox {
 
 	struct DrawableCreationInfo
 	{
-		Mox::Entity* m_OwningEntity;
+		Mox::RenderProxy* m_OwningProxy;
 		Mox::VertexBuffer* m_VertexBuffer;
 		Mox::IndexBuffer* m_IndexBuffer;
 		// Note: The following can later come from a material associated to this drawable

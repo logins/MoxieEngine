@@ -55,7 +55,7 @@ public:
 
 	virtual void UpdateTextureResources(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTextureUpdates) = 0;
 
-	virtual std::vector<RenderProxy*> CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) = 0;
+	virtual std::vector<RenderProxy*> RegisterProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) = 0;
 
 	virtual void AllocateResourceForBuffer(const Mox::BufferResourceRequest& InResourceRequest) = 0;
 

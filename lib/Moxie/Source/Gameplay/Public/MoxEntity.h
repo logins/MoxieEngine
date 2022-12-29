@@ -48,11 +48,9 @@ public:
 	Entity(Entity&&) noexcept;
 
 	// The entity is will take ownership of the component
-	void AddComponent(std::unique_ptr<class Mox::Component> InComponent);
+	void AddComponent(std::shared_ptr<class Mox::Component> InComponent);
 
-	Mox::RenderProxy* GetRenderProxy() const { return m_RenderProxy; };
-
-	void SetRenderProxy(Mox::RenderProxy* InProxy) { m_RenderProxy = InProxy; }
+	std::shared_ptr<Mox::RenderProxy> GetRenderProxy() const { return m_RenderProxy; };
 
 	inline Mox::Matrix4f GetModelMatrix() const { return m_WorldMatrix; }
 
@@ -66,7 +64,7 @@ private:
 
 	void OnTransformChanged();
 
-	std::vector<std::unique_ptr<class Mox::Component>> m_Components;
+	std::vector<std::shared_ptr<class Mox::Component>> m_Components;
 
 	Mox::Matrix4f m_WorldMatrix;
 
@@ -74,7 +72,7 @@ private:
 	Mox::Matrix3f m_WorldRot;
 	Mox::Matrix3f m_WorldScale;
 
-	Mox::RenderProxy* m_RenderProxy;
+	std::shared_ptr<Mox::RenderProxy> m_RenderProxy;
 };
 
 }

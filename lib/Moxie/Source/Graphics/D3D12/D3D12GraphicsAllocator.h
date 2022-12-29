@@ -86,7 +86,7 @@ public:
 	virtual Mox::CommandQueue& AllocateCommandQueue(class Device& InDevice, COMMAND_LIST_TYPE InCmdListType) override;
 
 
-	std::vector<Mox::RenderProxy*> CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) override;
+	std::vector<Mox::RenderProxy*> RegisterProxies(const std::vector<Mox::RenderProxyRequest>& InRequests) override;
 
 	void CreateDrawables(const std::vector<Mox::DrawableCreationInfo>& InRequests) override;
 
@@ -113,7 +113,7 @@ private:
 	std::deque<Mox::BufferResource> m_BufferArray;
 
 	std::deque<std::unique_ptr<Mox::Drawable>> m_DrawableArray;
-	std::deque<std::unique_ptr<Mox::RenderProxy>> m_RenderProxyArray;
+	std::deque<std::shared_ptr<Mox::RenderProxy>> m_RenderProxyArray;
 
 	std::deque<Mox::D3D12VertexBufferView> m_VertexViewArray;
 	std::deque<Mox::D3D12IndexBufferView> m_IndexViewArray;

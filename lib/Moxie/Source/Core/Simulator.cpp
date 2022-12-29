@@ -21,6 +21,10 @@ namespace Mox {
 
 	SimulatonThread::SimulatonThread()
 	{
+		// Note: At the moment it is very important for the array to not resize
+		// as otherwise all the memory addresses will change, and that will invalidate
+		// all the previous pointers and references to entities..
+		m_WorldEntities.reserve(50);
 	}
 
 	void SimulatonThread::Run()

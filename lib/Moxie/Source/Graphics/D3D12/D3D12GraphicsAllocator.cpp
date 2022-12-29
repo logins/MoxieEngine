@@ -215,19 +215,16 @@ namespace Mox {
 	}
 
 
-	std::vector<Mox::RenderProxy*> D3D12GraphicsAllocator::CreateProxies(const std::vector<Mox::RenderProxyRequest>& InRequests)
+	std::vector<Mox::RenderProxy*> D3D12GraphicsAllocator::RegisterProxies(const std::vector<Mox::RenderProxyRequest>& InRequests)
 	{
 		std::vector<Mox::RenderProxy*> outProxies;  outProxies.reserve(InRequests.size());
 
 		for (const Mox::RenderProxyRequest& proxyRequest : InRequests)
 		{
 
-			// Create proxy
-			m_RenderProxyArray.emplace_back(std::make_unique<Mox::RenderProxy>());
+			m_RenderProxyArray.emplace_back(proxyRequest.m_TargetProxy);
 
-			Mox::RenderProxy* newProxy = m_RenderProxyArray.back().get();
-			proxyRequest.m_TargetEntity->SetRenderProxy(newProxy);
-			outProxies.push_back(newProxy);
+			outProxies.push_back(proxyRequest.m_TargetProxy.get());
 		}
 
 		return outProxies;
@@ -239,7 +236,7 @@ namespace Mox {
 		{
 			m_DrawableArray.emplace_back(std::make_unique<Mox::Drawable>(drawableReq));
 			
-			drawableReq.m_OwningEntity->GetRenderProxy()->AddDrawable(m_DrawableArray.back().get());
+			drawableReq.m_OwningProxy->AddDrawable(m_DrawableArray.back().get());
 		}
 	}
 

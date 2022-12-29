@@ -14,6 +14,7 @@
 #include "GraphicsAllocator.h"
 #include "PipelineState.h"
 #include "MoxDrawable.h"
+#include "MoxEntity.h"
 
 namespace Mox { 
 
@@ -120,7 +121,7 @@ namespace Mox {
 
 
 	RenderProxyRequest::RenderProxyRequest(Mox::Entity& InEntity) 
-		: m_TargetEntity(&InEntity)
+		: m_TargetProxy(InEntity.GetRenderProxy())
 	{
 
 	}

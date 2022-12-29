@@ -15,14 +15,11 @@ namespace Mox {
 
 
 
-	MeshComponent::~MeshComponent()
-	{
+	MeshComponent::~MeshComponent() = default;
 
-	}
-
-	MeshComponent::MeshComponent(DrawableCreationInfo&& InCreationInfo)
+	MeshComponent::MeshComponent(DrawableCreationInfo&& InCreationInfo, Mox::Entity& InOwningEntity)
 		: m_VertexBuffer(*InCreationInfo.m_VertexBuffer), m_IndexBuffer(*InCreationInfo.m_IndexBuffer), 
-		m_OwnerEntity(*InCreationInfo.m_OwningEntity),
+		m_OwnerEntity(InOwningEntity),
 		m_MvpBuffer(std::make_unique<Mox::ConstantBuffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(Mox::Matrix4f)))
 	{
 

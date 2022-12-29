@@ -195,7 +195,7 @@ void RenderThread::ProcessRenderUpdates()
 	}
 
 	// Create proxies
-	std::vector<Mox::RenderProxy*> newProxies = GraphicsAllocator::Get()->CreateProxies(m_RenderUpdatesToProcess.m_ProxyRequests);
+	std::vector<Mox::RenderProxy*> newProxies = GraphicsAllocator::Get()->RegisterProxies(m_RenderUpdatesToProcess.m_ProxyRequests);
 
 	// Create Drawables
 	GraphicsAllocator::Get()->CreateDrawables(m_RenderUpdatesToProcess.m_DrawableRequests);

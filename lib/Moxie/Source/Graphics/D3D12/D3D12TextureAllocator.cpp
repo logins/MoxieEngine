@@ -75,6 +75,8 @@ Mox::TextureResource& D3D12TextureAllocator::Allocate(const TextureDesc& InDesc)
 
 void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std::vector<Mox::TextureResourceUpdate>& InTexUpdates)
 {
+	uint64_t intermediateOffset = 0;
+
 	for (const Mox::TextureResourceUpdate& curUpdate : InTexUpdates)
 	{
 		// Expected to find a contiguous memory of subresources in the data to upload
@@ -82,8 +84,7 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 		Mox::D3D12Resource& curTexResource = static_cast<Mox::D3D12Resource&>(curUpdate.m_TargetTexture->GetResource()->GetOwnerResource());
 		// Get memory layout information (footprints) of the subresources contained in the texture resource that we want to operate on
 		D3D12_RESOURCE_DESC& texResourceDesc = curTexResource.GetDesc();
-			
-
+		
 		uint16_t subresourceUpdatesNum = curUpdate.m_UpdateDesc.size();
 
 		// Rows num, row size and total bytes is the same for every mip 0
@@ -114,23 +115,21 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 			mip0Footprints[i] = curTexResource.GetSubresourceFootprints()[i];
 		}
 
-			
-		// Building the subresource info for the 
 		UINT64 uploadEsit = ::UpdateSubresources(
-			static_cast<Mox::D3D12CommandList&>(InCmdList).GetInner().Get(),		//_In_ ID3D12GraphicsCommandList* pCmdList,
-			curTexResource.GetInner().Get(),										//_In_ ID3D12Resource* pDestinationResource,
-			static_cast<Mox::D3D12Resource&>(m_StagingResource).GetInner().Get(),	//_In_ ID3D12Resource* pIntermediate,
-			0,							//_In_range_(0,D3D12_REQ_SUBRESOURCES) UINT FirstSubresource,
-			subresourceUpdatesNum,		//_In_range_(0,D3D12_REQ_SUBRESOURCES-FirstSubresource) UINT NumSubresources,
-			curUpdate.m_UpdateSize,		//UINT64 RequiredSize,
-			mip0Footprints.data(),		//_In_reads_(NumSubresources) const D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
-			rowsNumVector.data(),		//_In_reads_(NumSubresources) const UINT* pNumRows,
-			rowSizeVector.data(),		//_In_reads_(NumSubresources) const UINT64* pRowSizesInBytes,
-			subresourceDataVector.data()//_In_reads_(NumSubresources) const D3D12_SUBRESOURCE_INFO* pSrcData) noexcept
+			static_cast<Mox::D3D12CommandList&>(InCmdList).GetInner().Get(),		//_In_ ID3D12GraphicsCommandList * pCmdList,
+			curTexResource.GetInner().Get(),										//_In_ ID3D12Resource * pDestinationResource,
+			static_cast<Mox::D3D12Resource&>(m_StagingResource).GetInner().Get(),	//_In_ ID3D12Resource * pIntermediate,
+			intermediateOffset,			//UINT64 IntermediateOffset,
+			0,							//_In_range_(0, D3D12_REQ_SUBRESOURCES) UINT FirstSubresource,
+			subresourceUpdatesNum,		//_In_range_(0, D3D12_REQ_SUBRESOURCES - FirstSubresource) UINT NumSubresources,
+			subresourceDataVector.data()//_In_reads_(NumSubresources) const D3D12_SUBRESOURCE_DATA * pSrcData) noexcept
 		);
+			
 
 		Check(uploadEsit > 0) // This should return the resource required size. If 0 is returned, the operation failed.
-		
+
+		intermediateOffset += curUpdate.m_UpdateSize;
+
 	}
 
 	

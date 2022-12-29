@@ -22,14 +22,16 @@ Entity::Entity(const Mox::EntityCreationInfo& InInfo)
 	SetScale(InInfo.WorldScale.x(), InInfo.WorldScale.y(), InInfo.WorldScale.z());
 	Rotate(InInfo.WorldRotation.x(), InInfo.WorldRotation.y());
 
+	m_RenderProxy = std::make_shared<Mox::RenderProxy>();
+
 	Mox::RequestRenderProxyForEntity(*this);
 }
 
-void Entity::AddComponent(std::unique_ptr<class Mox::Component> InComponent)
+void Entity::AddComponent(std::shared_ptr<Mox::Component> InComponent)
 {
 	InComponent->OnPossessedBy(*this);
 
-	m_Components.emplace_back(std::move(InComponent));
+	m_Components.push_back(InComponent);
 }
 
 Entity::~Entity() = default;
@@ -78,7 +80,7 @@ void Entity::SetScale(float InX, float InY, float InZ)
 
 void Entity::OnTransformChanged()
 {
-	for (std::unique_ptr<class Mox::Component>& curComponent : m_Components)
+	for (std::shared_ptr<class Mox::Component>& curComponent : m_Components)
 	{
 		curComponent->OnEntityTransformChanged(m_WorldMatrix);
 	}

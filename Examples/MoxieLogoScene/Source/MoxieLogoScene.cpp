@@ -69,24 +69,24 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	);
 
 	m_SkydomeEntity = &AddEntity(Mox::EntityCreationInfo{ 
-		Mox::Vector3f::Zero(), Mox::Vector3f::Zero(),Mox::Vector3f(10,10,10)});
+		Mox::Vector3f::Zero(), Mox::Vector3f::Zero(), Mox::Vector3f(10,10,10)});
 
 	// Create the skydome cube texture
 	// Texture courtesy of https://www.solarsystemscope.com/textures/
 	m_SkydomeCubeTexture = std::make_unique<Mox::Texture>(MOXIE_LOGO_CONTENT_PATH(CubeMilkyWay.dds));
 	// Set it as shader parameter
 	Mox::TextureMeshParams meshShaderParamDefinitions{
-		{Mox::HashSpName("albedo_cube"), m_SkydomeCubeTexture.get()}
+		{ Mox::HashSpName("albedo_cube"), m_SkydomeCubeTexture.get() }
 	};
 	// Create mesh component and add it to the entity
-	static std::unique_ptr<Mox::MeshComponent> skydomeMesh = std::make_unique<Mox::MeshComponent>(
+	std::shared_ptr<Mox::MeshComponent> skydomeMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
-			m_SkydomeEntity, m_SkydomeVertexBuffer, m_SkydomeIndexBuffer,
+			m_SkydomeEntity->GetRenderProxy().get(), m_SkydomeVertexBuffer, m_SkydomeIndexBuffer,
 			Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions), 
-			true // Render backfaces
-		});
+			true // Render back faces
+		}, *m_SkydomeEntity);
 
-	m_SkydomeEntity->AddComponent(std::move(skydomeMesh));
+	m_SkydomeEntity->AddComponent(skydomeMesh);
 	// ----- ENDS SKYDOME -----
 
 	//// ----- QUAD -----
@@ -122,53 +122,53 @@ void MoxieLogoSceneApp::OnInitializeContent()
 
 	//// ----- QUAD ENDS -----
 
-	//// ----- SPHERE -----
+	// ----- SPHERE -----
 
-	//static std::vector<Mox::Vector3f> sphereMeshVertices;
-	//static std::vector<Mox::Vector2f> sphereMeshUvs;
-	//static std::vector<uint16_t> sphereMeshIndices;
-	//Mox::UVSphere(15, 15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
-	////Mox::NormalizedCube(15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
-	//static std::vector<TexVertexType> sphereVbData;
-	//sphereVbData.reserve(sphereMeshVertices.size());
-	//uvsIt = sphereMeshUvs.begin();
-	//for (const Mox::Vector3f& pos : sphereMeshVertices)
-	//{
-	//	sphereVbData.push_back({ pos, pos }); // Using vertex local position as cube UV coordinates
-	//	++uvsIt;
-	//}
+	static std::vector<Mox::Vector3f> sphereMeshVertices;
+	static std::vector<Mox::Vector2f> sphereMeshUvs;
+	static std::vector<uint16_t> sphereMeshIndices;
+	Mox::UVSphere(15, 15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
+	//Mox::NormalizedCube(15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
+	static std::vector<TexVertexType> sphereVbData;
+	sphereVbData.reserve(sphereMeshVertices.size());
+	uvsIt = sphereMeshUvs.begin();
+	for (const Mox::Vector3f& pos : sphereMeshVertices)
+	{
+		sphereVbData.push_back({ pos, pos }); // Using vertex local position as cube UV coordinates
+		++uvsIt;
+	}
 
-	//m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
-	//	m_VertexLayoutDesc,
-	//	sphereVbData.data(),
-	//	sizeof(TexVertexType),
-	//	sizeof(TexVertexType) * sphereVbData.size()
-	//); // TODO can we deduce these last two elements from compiler??
+	m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
+		m_VertexLayoutDesc,
+		sphereVbData.data(),
+		sizeof(TexVertexType),
+		sizeof(TexVertexType) * sphereVbData.size()
+	); // TODO can we deduce these last two elements from compiler??
 
-	//m_SphereIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
-	//	sphereMeshIndices.data(),
-	//	sizeof(uint16_t),
-	//	sizeof(uint16_t) * sphereMeshIndices.size()
-	//);
+	m_SphereIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
+		sphereMeshIndices.data(),
+		sizeof(uint16_t),
+		sizeof(uint16_t) * sphereMeshIndices.size()
+	);
 
-	//m_SphereEntity = &AddEntity({ Mox::Vector3f::Zero() });
+	m_SphereEntity = &AddEntity({ Mox::Vector3f::Zero() });
 
-	//// Create the sphere cube texture
-	//// Texture courtesy of https://www.solarsystemscope.com/textures/
-	//m_SphereCubeTexture = std::make_unique<Mox::Texture>(MOXIE_LOGO_CONTENT_PATH(CubeEarthNight.dds));
-	//// Set it as shader parameter
-	//Mox::TextureMeshParams sphereMeshShaderParamDefinitions{
-	//	{Mox::HashSpName("albedo_cube"), m_SphereCubeTexture.get()}
-	//};
-	//// Create mesh component and add it to the entity
-	//static std::unique_ptr<Mox::MeshComponent> sphereMesh = std::make_unique<Mox::MeshComponent>(
-	//	Mox::DrawableCreationInfo{
-	//		m_SphereEntity, m_SphereVertexBuffer, m_SphereIndexBuffer,
-	//		Mox::BufferMeshParams(), std::move(sphereMeshShaderParamDefinitions),
-	//	});
+	// Create the sphere cube texture
+	// Texture courtesy of https://www.solarsystemscope.com/textures/
+	m_SphereCubeTexture = std::make_unique<Mox::Texture>(MOXIE_LOGO_CONTENT_PATH(CubeEarthNight.dds));
+	// Set it as shader parameter
+	Mox::TextureMeshParams sphereMeshShaderParamDefinitions{
+		{Mox::HashSpName("albedo_cube"), m_SphereCubeTexture.get()}
+	};
+	// Create mesh component and add it to the entity
+	std::shared_ptr<Mox::MeshComponent> sphereMesh = std::make_unique<Mox::MeshComponent>(
+		Mox::DrawableCreationInfo{
+			m_SphereEntity->GetRenderProxy().get(), m_SphereVertexBuffer, m_SphereIndexBuffer,
+			Mox::BufferMeshParams(), std::move(sphereMeshShaderParamDefinitions),
+		}, *m_SphereEntity);
 
-	//m_SphereEntity->AddComponent(std::move(sphereMesh));
-	//// ----- ENDS SPHERE -----
+	m_SphereEntity->AddComponent(sphereMesh);
+	// ----- ENDS SPHERE -----
 
 
 

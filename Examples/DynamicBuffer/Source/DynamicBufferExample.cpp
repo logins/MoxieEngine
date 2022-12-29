@@ -64,7 +64,7 @@ void DynBufExampleApp::OnInitializeContent()
 	m_CubeEntity = &AddEntity({ Mox::Vector3f::Zero() });
 
 	std::unique_ptr<Mox::MeshComponent> cubeMesh = std::make_unique<Mox::MeshComponent>(
-		Mox::DrawableCreationInfo{ m_CubeEntity, m_VertexBuffer, m_IndexBuffer, std::move(meshShaderParamDefinitions)} );
+		Mox::DrawableCreationInfo{ m_CubeEntity->GetRenderProxy().get(), m_VertexBuffer, m_IndexBuffer, std::move(meshShaderParamDefinitions)}, *m_CubeEntity);
 
 
 	m_CubeEntity->AddComponent(std::move(cubeMesh));

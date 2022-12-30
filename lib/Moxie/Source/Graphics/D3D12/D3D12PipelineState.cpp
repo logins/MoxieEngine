@@ -167,6 +167,7 @@ namespace Mox{
 			CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
 			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
+			CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC BlendDesc;
 		} pipelineStateStream;
 
 		pipelineStateStream.pRootSignature = m_RootSignature.Get();
@@ -180,6 +181,20 @@ namespace Mox{
 		pipelineStateStream.PixelShader = CD3DX12_SHADER_BYTECODE(static_cast<Mox::D3D12Shader&>(InPipelineStateDesc.PixelShader).m_ShaderBlob.Get());
 		pipelineStateStream.DSVFormat = Mox::BufferFormatToD3D12(InPipelineStateDesc.DSFormat);
 		pipelineStateStream.RTVFormats = rtvFormats;
+		CD3DX12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+		blendDesc.RenderTarget[0] = D3D12_RENDER_TARGET_BLEND_DESC{
+			  true,//BOOL           BlendEnable;
+			  false, //BOOL           LogicOpEnable;
+			  D3D12_BLEND_SRC_ALPHA,//D3D12_BLEND    SrcBlend;
+			  D3D12_BLEND_INV_SRC_ALPHA, //D3D12_BLEND    DestBlend;
+			  D3D12_BLEND_OP_ADD,//D3D12_BLEND_OP BlendOp;
+			  D3D12_BLEND_ONE, //D3D12_BLEND    SrcBlendAlpha;
+			  D3D12_BLEND_ONE, //D3D12_BLEND    DestBlendAlpha;
+			  D3D12_BLEND_OP_ADD, //D3D12_BLEND_OP BlendOpAlpha;
+			  D3D12_LOGIC_OP_CLEAR, //D3D12_LOGIC_OP LogicOp;
+			  D3D12_COLOR_WRITE_ENABLE_ALL//UINT8          RenderTargetWriteMask;
+		};
+		pipelineStateStream.BlendDesc = blendDesc;
 
 		D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
 			sizeof(pipelineStateStream), &pipelineStateStream

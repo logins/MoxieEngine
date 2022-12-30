@@ -60,25 +60,28 @@ SamplerState TexSampler : register(s0); // Note: Since we are using a static sam
 
 float4 main(PixelShaderInput IN) : SV_Target
 {
+    float4 outColor = float4(0,0,0,0);
+
     // If texture is active, start from color sampled from it
     if (FeaturesFieldCB.value & DRAW_FEATURES_COLOR_TEX)
     {
-        IN.PrimitiveColor = ColorTexture.Sample(TexSampler, IN.TextureCoords.xy).xyz;
+        outColor = ColorTexture.Sample(TexSampler, IN.TextureCoords.xy);
         // Sample function documentation at this page
         // https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-to-sample
+
     }
     // If cube is active, start from color sampled from it
     else if (FeaturesFieldCB.value & DRAW_FEATURES_COLOR_CUBE)
     {
-        IN.PrimitiveColor = ColorCube.Sample(TexSampler, IN.TextureCoords.xyz).xyz;
+        outColor = ColorCube.Sample(TexSampler, IN.TextureCoords.xyz);
     }
 
-    if (FeaturesFieldCB.value & DRAW_FEATURES_COLOR_MOD)
+    if ((FeaturesFieldCB.value & DRAW_FEATURES_COLOR_MOD) && (outColor.x + outColor.y + outColor.z)/3.f > 0.1f)
     {
-        IN.PrimitiveColor *= ColorModifierCB.value;
+        outColor.xyz *= ColorModifierCB.value;
     }
-    
-    return float4(IN.PrimitiveColor, 1.f);
+
+    return outColor;
 }
 
 

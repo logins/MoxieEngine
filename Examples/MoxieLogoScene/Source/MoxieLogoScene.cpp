@@ -89,39 +89,6 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	m_SkydomeEntity->AddComponent(skydomeMesh);
 	// ----- ENDS SKYDOME -----
 
-	//// ----- QUAD -----
-
-	//m_QuadVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
-	//	m_VertexLayoutDesc,
-	//	&m_QuadVertexData,
-	//	sizeof(TexVertexType),
-	//	sizeof(m_QuadVertexData)
-	//);
-
-	//m_QuadIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
-	//	&m_QuadIndexData,
-	//	sizeof(uint16_t),
-	//	sizeof(m_QuadIndexData)
-	//);
-
-	//m_QuadEntity = &AddEntity(Mox::EntityCreationInfo{ Mox::Vector3f(2.5f,-2.5f,0),Mox::Vector3f::Zero(), Mox::Vector3f(1.5f,1.5f,1.5f) });
-
-	//m_QuadTexture = std::make_unique<Mox::Texture>(MOXIE_LOGO_CONTENT_PATH(MarsMap.dds));
-	//// Set it as shader parameter
-	//Mox::TextureMeshParams quadMeshShaderParamDefinitions = Mox::TextureMeshParams{
-	//	{Mox::HashSpName("albedo_tex"), m_QuadTexture.get()}
-	//};
-	//// Create mesh component and add it to the entity
-	//std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
-	//	Mox::DrawableCreationInfo{
-	//		m_QuadEntity, m_QuadVertexBuffer, m_QuadIndexBuffer,
-	//		Mox::BufferMeshParams(), std::move(quadMeshShaderParamDefinitions),
-	//	});
-
-	//m_QuadEntity->AddComponent(std::move(quadMesh));
-
-	//// ----- QUAD ENDS -----
-
 	// ----- SPHERE -----
 
 	static std::vector<Mox::Vector3f> sphereMeshVertices;
@@ -131,11 +98,14 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	//Mox::NormalizedCube(15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
 	static std::vector<TexVertexType> sphereVbData;
 	sphereVbData.reserve(sphereMeshVertices.size());
-	uvsIt = sphereMeshUvs.begin();
+
 	for (const Mox::Vector3f& pos : sphereMeshVertices)
 	{
-		sphereVbData.push_back({ pos, pos }); // Using vertex local position as cube UV coordinates
-		++uvsIt;
+		Mox::Vector3f cubeUV = pos;
+		// For the sphere we are looking at UVs from the outside, so the horizontal axis need to be inverted
+		cubeUV.x() *= -1;
+		sphereVbData.push_back({ pos, cubeUV }); // Using vertex local position as cube UV coordinates
+
 	}
 
 	m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
@@ -151,7 +121,17 @@ void MoxieLogoSceneApp::OnInitializeContent()
 		sizeof(uint16_t) * sphereMeshIndices.size()
 	);
 
-	m_SphereEntity = &AddEntity({ Mox::Vector3f::Zero() });
+	m_SphereEntity = &AddEntity(Mox::EntityCreationInfo
+		{ Mox::Vector3f::Zero(), Mox::Vector3f(180.f,0.f,0.f), Mox::Vector3f(3.5f,3.5f,3.5f) });
+
+	// Creating buffer for the color mod
+	m_ColorModBuffer = std::make_unique<Mox::ConstantBuffer>(Mox::BUFFER_ALLOC_TYPE::DYNAMIC, sizeof(float));
+	float colorMod = .5f;
+	m_ColorModBuffer->SetData(&colorMod, sizeof(float));
+
+	Mox::BufferMeshParams sphereBufferParamDefinitions{
+		{Mox::HashSpName("c_mod"), m_ColorModBuffer.get()}
+	};
 
 	// Create the sphere cube texture
 	// Texture courtesy of https://www.solarsystemscope.com/textures/
@@ -160,24 +140,67 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	Mox::TextureMeshParams sphereMeshShaderParamDefinitions{
 		{Mox::HashSpName("albedo_cube"), m_SphereCubeTexture.get()}
 	};
+
 	// Create mesh component and add it to the entity
 	std::shared_ptr<Mox::MeshComponent> sphereMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
 			m_SphereEntity->GetRenderProxy().get(), m_SphereVertexBuffer, m_SphereIndexBuffer,
-			Mox::BufferMeshParams(), std::move(sphereMeshShaderParamDefinitions),
+			std::move(sphereBufferParamDefinitions), std::move(sphereMeshShaderParamDefinitions),
 		}, *m_SphereEntity);
 
 	m_SphereEntity->AddComponent(sphereMesh);
 	// ----- ENDS SPHERE -----
 
+	// ----- QUAD -----
 
+	m_QuadVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
+		m_VertexLayoutDesc,
+		&m_QuadVertexData,
+		sizeof(TexVertexType),
+		sizeof(m_QuadVertexData)
+	);
+
+	m_QuadIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
+		&m_QuadIndexData,
+		sizeof(uint16_t),
+		sizeof(m_QuadIndexData)
+	);
+
+	m_QuadEntity = &AddEntity(Mox::EntityCreationInfo{ Mox::Vector3f(0.f,-1.5f,-4.f),Mox::Vector3f::Zero(), Mox::Vector3f(1.5f,1.5f,1.5f) });
+
+	m_QuadTexture = std::make_unique<Mox::Texture>(MOXIE_LOGO_CONTENT_PATH(TexLogo.dds));
+	// Set it as shader parameter
+	Mox::TextureMeshParams quadMeshShaderParamDefinitions = Mox::TextureMeshParams{
+		{Mox::HashSpName("albedo_tex"), m_QuadTexture.get()}
+	};
+	// Create mesh component and add it to the entity
+	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
+		Mox::DrawableCreationInfo{
+			m_QuadEntity->GetRenderProxy().get(), m_QuadVertexBuffer, m_QuadIndexBuffer,
+			Mox::BufferMeshParams(), std::move(quadMeshShaderParamDefinitions),
+		}, *m_QuadEntity);
+
+	m_QuadEntity->AddComponent(std::move(quadMesh));
+
+	// ----- QUAD ENDS -----
 
 }
 
 void MoxieLogoSceneApp::UpdateContent(float InDeltaTime)
 {
-	float rotationSpeed = 0.001f;
+	static constexpr float rotationSpeed = 0.0005f;
 
-	m_SkydomeEntity->Rotate(InDeltaTime * rotationSpeed, 0.f);
+	float rotX = InDeltaTime * rotationSpeed;
+
+	m_SkydomeEntity->Rotate(rotX, 0.f);
+
+	m_SphereEntity->Rotate(rotX, 0.f);
+
+	// Updating color modifier
+	static float progress = 0.f, counter = 0.f;
+	counter = 1.75f + std::sin(progress) / 2.f;
+	progress += 0.01f * InDeltaTime;
+
+	m_ColorModBuffer->SetData(&counter, sizeof(float));
 }
 

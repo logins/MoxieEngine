@@ -127,8 +127,8 @@ void D3D12TextureAllocator::UpdateContent(Mox::CommandList& InCmdList, const std
 			
 
 		Check(uploadEsit > 0) // This should return the resource required size. If 0 is returned, the operation failed.
-
-		intermediateOffset += curUpdate.m_UpdateSize;
+			
+		intermediateOffset += Mox::Align(curUpdate.m_UpdateSize, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
 
 	}
 

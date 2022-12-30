@@ -45,6 +45,8 @@
 		Mox::VertexBuffer* m_SphereVertexBuffer;
 		Mox::IndexBuffer* m_SphereIndexBuffer;
 		std::unique_ptr<Mox::Texture> m_SphereCubeTexture;
+		// Standalone Constant Buffer for the color modifier
+		std::unique_ptr<Mox::ConstantBuffer> m_ColorModBuffer;
 
 		Mox::Entity* m_SphereEntity;
 

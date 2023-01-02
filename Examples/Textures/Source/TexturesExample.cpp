@@ -75,9 +75,9 @@ void TexturesExampleApplication::OnInitializeContent()
 	// Create mesh component and add it to the entity
 	std::unique_ptr<Mox::MeshComponent> quadMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
-			m_QuadEntity, m_QuadVertexBuffer, m_QuadIndexBuffer,
+			m_QuadEntity->GetRenderProxy().get(), m_QuadVertexBuffer, m_QuadIndexBuffer,
 			Mox::BufferMeshParams(), std::move(quadMeshShaderParamDefinitions),
-		});
+		}, *m_QuadEntity);
 
 	m_QuadEntity->AddComponent(std::move(quadMesh));
 
@@ -124,9 +124,9 @@ void TexturesExampleApplication::OnInitializeContent()
 	// Create mesh component and add it to the entity
 	std::unique_ptr<Mox::MeshComponent> sphereMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
-			m_SphereEntity, m_SphereVertexBuffer, m_SphereIndexBuffer, 
+			m_SphereEntity->GetRenderProxy().get(), m_SphereVertexBuffer, m_SphereIndexBuffer,
 			Mox::BufferMeshParams(), std::move(meshShaderParamDefinitions),
-			});
+			},*m_SphereEntity);
 
 	m_SphereEntity->AddComponent(std::move(sphereMesh));
 	// ----- ENDS SPHERE -----

@@ -198,7 +198,7 @@ void MoxieLogoSceneApp::UpdateContent(float InDeltaTime)
 
 	// Updating color modifier
 	static float progress = 0.f, counter = 0.f;
-	counter = 1.75f + std::sin(progress) / 2.f;
+	counter = 2.75f + 2.f * std::sin(progress);
 	progress += 0.01f * InDeltaTime;
 
 	m_ColorModBuffer->SetData(&counter, sizeof(float));

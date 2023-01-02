@@ -20,21 +20,20 @@ namespace Mox {
 
 
 	/*
-	RenderPass abstracts a set of draw calls or dispatches with similar intent.
-	Its duty is process render proxy and generate draw commands from them, 
-	that later will be translated and sent to the GPU by the render thread.
+	* RenderPass abstracts a set of draw calls or dispatches with similar intent.
+	* Its duty is process render proxy and generate draw commands from them, 
+	* that later will be translated and sent to the GPU by the render thread.
 	*/
 	class RenderPass
 	{
 	public:
 
-		RenderPass() = default; // Note: this is needed to not delete constructor at compile time, which would prevent unique_ptr to work with this class
+		// Note: this is needed to not delete constructor at compile time, which would prevent unique_ptr to work with this class
+		RenderPass() = default;
 
 		virtual ~RenderPass() = default; // Note: this is needed to not delete the destructor of this class at compile time. 
 		// Deleting destructor of this class would bring failure when using std::unique_ptr<RenderPass>
 
-		//RenderPass(const RenderPass&) = delete;
-		//RenderPass& operator=(const RenderPass&) = delete;
 
 		// Sets up pipeline state, including root signature and shaders
 		// (for simplicity, at the moment, there is one static PSO for render pass) 

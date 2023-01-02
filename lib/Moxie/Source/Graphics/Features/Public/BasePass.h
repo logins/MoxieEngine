@@ -18,9 +18,9 @@ namespace Mox {
 	class RenderProxy;
 	class CommandList;
 
-
 	// This call is needed for all the render passes we want to register
 	REGISTER_RENDER_PASS(BasePass)
+
 
 	class BasePass : public RenderPass
 	{
@@ -29,10 +29,6 @@ namespace Mox {
 		BasePass() = default;
 
 		virtual ~BasePass();
-
-		//BasePass(const BasePass&) = delete;
-		//BasePass& operator=(const BasePass&) = delete;
-
 
 		void SetupPass(Mox::CommandList& InCmdList) override;
 
@@ -43,12 +39,6 @@ namespace Mox {
 	private:
 
 		std::unique_ptr<Mox::PipelineState::GRAPHICS_PSO_DESC> m_DefaultPSODesc;
-
-		// This will serve as static registrar element pattern: 
-		// it will allow to register the base pass in a static pass list
-		// that will be accessible by the application
-		// Note: Remember to define static member variables!!!
-		//static bool m_Registered;
 		
 	};
 }

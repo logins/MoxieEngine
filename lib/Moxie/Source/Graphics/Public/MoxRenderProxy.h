@@ -17,8 +17,8 @@ namespace Mox {
 	class Drawable;
 
 	/*
-		RenderProxy: Render thread representation of a Mox::Entity in a Mox::World.
-		It holds a collection of Mox::Mesh objects (with a vertex and index buffers, and shader parameters).
+	*	Representation of a Mox::Entity in a Mox::World on the render thread.
+	*	It holds a collection of Mox::Mesh objects (with a vertex and index buffers, and shader parameters).
 	*/
 	class RenderProxy
 	{

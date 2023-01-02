@@ -22,13 +22,17 @@ namespace Mox {
 	class RenderProxy;
 	class Drawable;
 
-// This pure virtual class serves as interface for any Graphics Allocator we want to implement.
-// A graphics allocator is meant to handle the lifetime of graphics resources (buffers, textures and descriptors) 
-// and having a direct communication with GPU memory.
-// In Application code we are going to use GraphicsAllocator with a factory pattern class, so we can call GraphicsAllocator::Get()
-// to retrieve the real allocator (in our case a D3D12GraphicsAllocator object).
-// Using this pattern is better compared to a singleton, because we are then able to extend the graphics allocator class
-// to different platform-agnostic implementations and possibly different versions for a specific platform (e.g. a specific implementation for testing).
+/* 
+* This pure virtual class serves as interface for any Graphics Allocator we want to implement.
+* A graphics allocator is meant to handle the lifetime of graphics resources (buffers, textures and descriptors) 
+* and having a direct communication with GPU memory.
+* 
+* In Application code we are going to use GraphicsAllocator with a factory pattern class, so we can call GraphicsAllocator::Get()
+* to retrieve the real allocator (in our case a D3D12GraphicsAllocator object).
+* 
+* Using this pattern is better compared to a singleton, because we are then able to extend the graphics allocator class
+* to different platform-agnostic implementations and possibly different versions for a specific platform (e.g. a specific implementation for testing).
+*/
 class GraphicsAllocatorBase
 {
 public:

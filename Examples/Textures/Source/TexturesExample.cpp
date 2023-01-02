@@ -23,7 +23,6 @@
 #include "MoxMeshComponent.h"
 
 
-//#define TEXTURES_EXAMPLE_SHADERS_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/shaders/NAME)
 #define TEXTURES_EXAMPLE_CONTENT_PATH(NAME) LQUOTE(TEXTURES_EXAMPLE_PROJ_ROOT_PATH/Content/NAME)
 
 
@@ -89,14 +88,13 @@ void TexturesExampleApplication::OnInitializeContent()
 	static std::vector<Mox::Vector2f> sphereMeshUvs;
 	static std::vector<uint16_t> sphereMeshIndices;
 	Mox::UVSphere(15, 15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
-	//Mox::NormalizedCube(15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
+
 	static std::vector<TexVertexType> sphereVbData; 
 	sphereVbData.reserve(sphereMeshVertices.size());
-	auto uvsIt = sphereMeshUvs.begin();
+
 	for (const Mox::Vector3f& pos : sphereMeshVertices)
 	{
 		sphereVbData.push_back({ pos, pos }); // Using vertex local position as cube UV coordinates
-		++uvsIt;
 	}
 
 	m_SphereVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(

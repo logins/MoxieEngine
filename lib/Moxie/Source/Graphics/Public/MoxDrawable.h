@@ -24,8 +24,8 @@ struct IndexBufferView;
 
 
 /*
-	A Drawable contains single drawing information used by render passes.
-	It is meant to be used in the render thread where most of the render code lives.
+*	A Drawable contains single drawing information used by render passes.
+*	It is meant to be used in the render thread where most of the render code lives.
 */
 class Drawable
 {

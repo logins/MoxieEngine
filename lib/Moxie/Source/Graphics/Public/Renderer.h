@@ -19,8 +19,9 @@ namespace Mox {
 	class CommandQueue;
 	class GraphicsAllocatorBase;
 	class RenderPass;
+
 	/*
-	Handles all the rendering logic for the engine
+	* Handles all the rendering logic for the engine.
 	*/
 	class RenderThread : public Mox::SystemThread {
 

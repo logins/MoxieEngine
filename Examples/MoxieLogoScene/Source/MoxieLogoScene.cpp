@@ -45,14 +45,13 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	static std::vector<Mox::Vector2f> skydomeMeshUvs;
 	static std::vector<uint16_t> skydomeMeshIndices;
 	Mox::UVSphere(15, 15, skydomeMeshVertices, skydomeMeshUvs, skydomeMeshIndices);
-	//Mox::NormalizedCube(15, skydomeMeshVertices, skydomeMeshUvs, skydomeMeshIndices);
+
 	static std::vector<TexVertexType> skydomeVbData;
 	skydomeVbData.reserve(skydomeMeshVertices.size());
-	auto uvsIt = skydomeMeshUvs.begin();
+
 	for (const Mox::Vector3f& pos : skydomeMeshVertices)
 	{
 		skydomeVbData.push_back({ pos, pos }); // Using vertex local position as cube UV coordinates
-		++uvsIt;
 	}
 
 	m_SkydomeVertexBuffer = &Mox::GraphicsAllocator::Get()->AllocateVertexBuffer(
@@ -60,7 +59,7 @@ void MoxieLogoSceneApp::OnInitializeContent()
 		skydomeVbData.data(),
 		sizeof(TexVertexType),
 		sizeof(TexVertexType) * skydomeVbData.size()
-	); // TODO can we deduce these last two elements from compiler??
+	);
 
 	m_SkydomeIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
 		skydomeMeshIndices.data(),
@@ -78,6 +77,7 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	Mox::TextureMeshParams meshShaderParamDefinitions{
 		{ Mox::HashSpName("albedo_cube"), m_SkydomeCubeTexture.get() }
 	};
+
 	// Create mesh component and add it to the entity
 	std::shared_ptr<Mox::MeshComponent> skydomeMesh = std::make_unique<Mox::MeshComponent>(
 		Mox::DrawableCreationInfo{
@@ -95,7 +95,7 @@ void MoxieLogoSceneApp::OnInitializeContent()
 	static std::vector<Mox::Vector2f> sphereMeshUvs;
 	static std::vector<uint16_t> sphereMeshIndices;
 	Mox::UVSphere(15, 15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
-	//Mox::NormalizedCube(15, sphereMeshVertices, sphereMeshUvs, sphereMeshIndices);
+
 	static std::vector<TexVertexType> sphereVbData;
 	sphereVbData.reserve(sphereMeshVertices.size());
 
@@ -113,7 +113,7 @@ void MoxieLogoSceneApp::OnInitializeContent()
 		sphereVbData.data(),
 		sizeof(TexVertexType),
 		sizeof(TexVertexType) * sphereVbData.size()
-	); // TODO can we deduce these last two elements from compiler??
+	);
 
 	m_SphereIndexBuffer = &Mox::GraphicsAllocator::Get()->AllocateIndexBuffer(
 		sphereMeshIndices.data(),

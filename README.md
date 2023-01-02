@@ -63,7 +63,7 @@ The entire project is configured with [CMake files](CMakeLists.txt) and it is co
 
 Applications built with Moxie can use [delegate objects](lib/Moxie/Source/Public/Delegate.h) to answer events, for example mouse and keyboard events from the window class, like done in the [textures example](Examples/Textures/Source/TexturesExample.cpp).
 
-DDS file format for cubemap and 2D textures loading is supported through [D3D12ResourceLoader](lib/Moxie/Source/Graphics/D3D12/D3D12ResourceLoader.h) which internally relies on the dependency from DirectXTex library.  
+DDS file format for cubemap and 2D textures loading is supported through [D3D12ResourceLoader](lib/Moxie/Source/Graphics/D3D12/D3D12ResourceLoader.cpp) which internally relies on the dependency from DirectXTex library.  
 
 # Disclaimer
 

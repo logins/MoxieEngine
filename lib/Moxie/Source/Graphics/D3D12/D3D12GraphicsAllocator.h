@@ -130,8 +130,6 @@ private:
 
 	std::unique_ptr<Mox::D3D12DescHeapFactory> m_DescHeapFactory;
 
-	// Changes to be picked up by the render thread
-
 
 	uint64_t m_FrameCounter = 0;
 };

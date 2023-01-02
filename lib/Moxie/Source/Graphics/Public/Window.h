@@ -17,15 +17,15 @@
 
 namespace Mox { 
 
-		// Struct containing the many params used to initialize a Window
-		struct WindowInitInput
-		{
-			const wchar_t* WindowClassName; const wchar_t* WindowTitle;
-			CommandQueue& CmdQueue;
-			uint32_t WinWidth; uint32_t WinHeight;
-			uint32_t BufWidth; uint32_t BufHeight;
-			bool vSyncEnabled;
-		};
+	// Struct containing the many params used to initialize a Window
+	struct WindowInitInput
+	{
+		const wchar_t* WindowClassName; const wchar_t* WindowTitle;
+		CommandQueue& CmdQueue;
+		uint32_t WinWidth; uint32_t WinHeight;
+		uint32_t BufWidth; uint32_t BufHeight;
+		bool vSyncEnabled;
+	};
 
 	// Virtual class to be used as a platform-agnostic representation of a graphic window.
 	class Window

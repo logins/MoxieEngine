@@ -27,15 +27,10 @@ namespace Mox {
 		class Entity;
 		struct EntityCreationInfo;
 
-	/*!
-	 * \class Application
-	 *
-	 * \brief Represents the whole application.
-	 * This is intended to be derived to implement proper functionality for each project part.
-	 * Application acts as a main hub to generate most of the other objects required to run each example.
-	 *
-	 * \author Riccardo Loggini
-	 * \date July 2020
+	/*
+	 * Represents the whole application run from the executable.
+	 * Application acts as a main hub to generate most of the other objects and runs the main engine loop,
+	 * while synchronizing simulation and render threads.
 	 */
 	class Application
 	{
@@ -85,7 +80,8 @@ namespace Mox {
 		// Singleton : Default constructor, copy constructor and assingment operators to be private
 		Application();
 
-		static std::unique_ptr<Application> m_Instance; //Note: This is just a declaration, not a definition! m_Instance must be explicitly defined
+		//Note: This is just a declaration, not a definition! m_Instance must be explicitly defined
+		static std::unique_ptr<Application> m_Instance;
 
 		bool CanComputeFrame();
 
